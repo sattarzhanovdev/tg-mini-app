@@ -1,0 +1,101 @@
+@font-face {
+  font-family: 'SF pro semibold';
+  src: url('./fonts/semibold.otf');
+}
+
+@font-face {
+  font-family: 'SF pro medium';
+  src: url('./fonts/medium.otf');
+}
+
+*{
+  font-family: 'SF pro medium', sans-serif;
+}
+
+body{
+  margin: 0;
+  background: white;
+}
+
+header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 50px;
+  padding: 0 15px;
+}
+
+header .left h4{
+  font-size: 25px;
+  font-family: 'SF pro semibold', sans-serif;
+  margin: 0;
+}
+
+header .left p{
+  font-size: 13px;
+  color: #99A2AD;
+  margin: 0;
+  margin-top: 6px;
+}
+
+header img{
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+
+/* Main Content */
+
+.choices{
+  padding: 0 15px;
+}
+
+.choices h4{
+  font-size: 21px;
+}
+
+.choices .big{
+  height: 164px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #F5F5F5;
+  padding: 15px;
+  background: #FCFCFC;
+  border-radius: 12px;
+}
+
+.choices .big .left{
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-direction: column;
+}
+
+.choices .big .left h4{
+  color: #000;
+  font-family: "SF Pro Display";
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 20px; /* 133.333% */
+  letter-spacing: -0.105px;
+  margin: 0;
+}
+
+
+.choices .big .left p{
+  color: #99A2AD;
+
+  /* F-13 Medium */
+  font-family: "SF Pro Display";
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 14px; /* 107.692% */
+  letter-spacing: 0.065px;
+  margin: 0;
+}
