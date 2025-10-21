@@ -13,6 +13,7 @@
 }
 
 body{
+  
   margin: 0;
   background: white;
 }
@@ -81,7 +82,7 @@ header img{
 
 .choices .big .left h4{
   color: #000;
-  font-family: "SF Pro Display";
+  font-family: "SF Pro semibold";
   font-size: 15px;
   font-style: normal;
   font-weight: 600;
@@ -95,7 +96,7 @@ header img{
   color: #99A2AD;
 
   /* F-13 Medium */
-  font-family: "SF Pro Display";
+  font-family: "SF Pro medium";
   font-size: 13px;
   font-style: normal;
   font-weight: 500;
@@ -129,7 +130,7 @@ header img{
 
 .choices .categories .row .card h4{
   color: #000;
-  font-family: "SF Pro Display";
+  font-family: "SF Pro semibold";
   font-size: 15px;
   font-style: normal;
   font-weight: 600;
@@ -143,7 +144,7 @@ header img{
   color: #99A2AD;
 
   /* F-13 Medium */
-  font-family: "SF Pro Display";
+  font-family: "SF Pro medium";
   font-size: 13px;
   font-style: normal;
   font-weight: 500;
