@@ -67,6 +67,10 @@ header img{
   border-radius: 12px;
 }
 
+.choices .big:nth-child(3){
+  margin-top: 10px;
+}
+
 .choices .big .left{
   height: 100%;
   display: flex;
