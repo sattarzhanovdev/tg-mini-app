@@ -1,5 +1,6 @@
 const tg = window.Telegram.WebApp;
 tg.ready();
+tg.expand(); // попытка увеличить область
 
 const user = tg.initDataUnsafe?.user;
 document.getElementById("user-name").innerText = user ? `Здравствуйте, ${user.first_name}!` : "Здравствуйте, гость!";
