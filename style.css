@@ -348,9 +348,10 @@ header img{
   align-items: center;
   justify-content: center;
   color: white;
-  font-family: 'SF Pro medium';
+  font-family: 'SF Pro semibold';
   border-radius: 8px;
   border: 0;
+  font-size: 17px;
 }
 
 /* bottom bar */
