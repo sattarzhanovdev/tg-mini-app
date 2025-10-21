@@ -99,3 +99,51 @@ header img{
   letter-spacing: 0.065px;
   margin: 0;
 }
+
+
+.choices .categories .row{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.choices .categories .row .card{
+  width: 50%;
+  height: 164px;
+  border-radius: 12px;
+  border: 1px solid #F5F5F5;
+  padding: 15px;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: space-between;
+
+  background: #FCFCFC;
+}
+
+.choices .categories .row .card h4{
+  color: #000;
+  font-family: "SF Pro Display";
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 20px; /* 133.333% */
+  letter-spacing: -0.105px;
+  margin: 0;
+}
+
+
+.choices .categories .row .card p{
+  color: #99A2AD;
+
+  /* F-13 Medium */
+  font-family: "SF Pro Display";
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 14px; /* 107.692% */
+  letter-spacing: 0.065px;
+  margin: 0;
+}
