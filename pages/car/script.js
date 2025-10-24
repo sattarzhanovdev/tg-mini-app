@@ -29,10 +29,9 @@ navLinks.forEach(link => {
   });
 });
 
-
-const startInput = document.getElementById('start-date');
-const endInput = document.getElementById('end-date');
-const text = document.getElementById('date-text'); // если хочешь выводить итог куда-то
+const start = document.getElementById('start-date');
+const end = document.getElementById('end-date');
+const label = document.getElementById('date-label');
 
 const declineDays = (n) => {
   if (n % 10 === 1 && n % 100 !== 11) return 'день';
@@ -40,19 +39,21 @@ const declineDays = (n) => {
   return 'дней';
 };
 
-function updateDateText() {
-  if (!startInput.value || !endInput.value) return;
-  const startDate = new Date(startInput.value);
-  const endDate = new Date(endInput.value);
-  const diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-  const options = { day: 'numeric', month: 'short' };
-  const startStr = startDate.toLocaleDateString('ru-RU', options);
-  const endStr = endDate.toLocaleDateString('ru-RU', options);
-  text.textContent = `${startStr} – ${endStr} · ${diffDays} ${declineDays(diffDays)}`;
+function updateLabel() {
+  if (!start.value || !end.value) return;
+  const s = new Date(start.value);
+  const e = new Date(end.value);
+  const days = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
+
+  const opts = { day: 'numeric', month: 'short' };
+  const sStr = s.toLocaleDateString('ru-RU', opts);
+  const eStr = e.toLocaleDateString('ru-RU', opts);
+
+  label.textContent = `${sStr} – ${eStr} · ${days} ${declineDays(days)}`;
 }
 
-startInput.addEventListener('change', updateDateText);
-endInput.addEventListener('change', updateDateText);
+start.addEventListener('change', updateLabel);
+end.addEventListener('change', updateLabel);
 
 const bookingModal = document.getElementById('bookingModal');
 const successModal = document.getElementById('successModal');

@@ -101,6 +101,44 @@ header img{
   width: 90%;
 }
 
+.date-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 12px;
+  border: 1px solid #1B86FF;
+  background: rgba(27, 134, 255, 0.20);
+  padding: 10px 12px;
+  width: 90%;
+}
+
+.fake-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none; /* чтобы клик шёл сквозь */
+}
+
+.fake-date img {
+  width: 18px;
+  filter: brightness(0);
+}
+
+.fake-date span {
+  font-size: 15px;
+  font-family: "SF Pro medium";
+  color: #000;
+}
+
+/* Невидимые, но кликабельные инпуты */
+.date-box input[type="date"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
 .date-input .icon {
   width: 18px;
   filter: brightness(0);

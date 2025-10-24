@@ -20,15 +20,15 @@
       <h4 class="title">Автомобили</h4>
 
       <div class="date-picker">
-        <form class="date">
-          <p>Дата аренды</p>
-          <div class="date-input">
-            <!-- <img src="../../images/date.svg" alt="date" class="icon"> -->
-            <input type="date" id="start-date" class="mobile-date" placeholder="Дата начала">
-            <span class="dash">–</span>
-            <input type="date" id="end-date" class="mobile-date" placeholder="Дата окончания">
+        <p>Дата аренды</p>
+        <div class="date-box">
+          <div class="fake-date">
+            <img src="../../images/date.svg" alt="date">
+            <span id="date-label">Выберите дату бронирования</span>
           </div>
-        </form>
+          <input type="date" id="start-date">
+          <input type="date" id="end-date">
+        </div>
       </div>
 
       <div class="category-container">
