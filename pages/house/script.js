@@ -347,7 +347,7 @@ bookingModal?.addEventListener("click", (e) => {
    ================ */
 bookingForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!currentMoto) return alert("Выберите мотоцикл");
+  if (!currentCar) return alert("Выберите автомобиль");
   if (!selectedStart || !selectedEnd) return alert("Выберите даты");
 
   const name = bookingForm.querySelector("input[placeholder='Ваше имя']")?.value.trim();
@@ -357,7 +357,7 @@ bookingForm?.addEventListener("submit", async (e) => {
   if (!user?.id) return alert("Откройте Mini App в Telegram!");
 
   const payload = {
-    motorcycle: currentMoto.id,
+    car: currentCar.id,
     start_date: selectedStart,
     end_date: selectedEnd,
     telegram_id: user.id,
@@ -380,13 +380,12 @@ bookingForm?.addEventListener("submit", async (e) => {
 
     if (!res.ok) throw new Error(await res.text());
 
-    // ✅ успех: закрываем модалку бронирования и показываем successModal
+    // Успешная отправка
     tg?.HapticFeedback?.notificationOccurred?.("success");
     bookingModal.style.display = "none";
     successModal.style.display = "flex";
     document.body.style.overflow = "hidden";
 
-    // обновляем список, чтобы занятость обновилась
     await fetchBookings();
     applyFilters();
 
@@ -399,6 +398,7 @@ bookingForm?.addEventListener("submit", async (e) => {
     btn.textContent = prevText;
   }
 });
+
 closeSuccess?.addEventListener("click", () => {
   successModal.style.display = "none";
   document.body.style.overflow = "";
