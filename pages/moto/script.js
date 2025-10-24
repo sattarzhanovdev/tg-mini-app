@@ -302,7 +302,7 @@ closeSuccess?.addEventListener("click", () => {
    ================ */
 bookingForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!currentCar) return alert("Выберите автомобиль");
+  if (!currentMoto) return alert("Выберите мотоцикл");
   if (!selectedStart || !selectedEnd) return alert("Выберите даты");
 
   const name = bookingForm.querySelector("input[placeholder='Ваше имя']")?.value.trim();
@@ -312,7 +312,7 @@ bookingForm?.addEventListener("submit", async (e) => {
   if (!user?.id) return alert("Откройте Mini App в Telegram!");
 
   const payload = {
-    car: currentCar.id,
+    car: currentMoto.id,
     start_date: selectedStart,
     end_date: selectedEnd,
     telegram_id: user.id,

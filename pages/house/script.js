@@ -347,7 +347,7 @@ bookingModal?.addEventListener("click", (e) => {
    ================ */
 bookingForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!currentCar) return alert("Выберите автомобиль");
+  if (!currentHouse) return alert("Выберите дом");
   if (!selectedStart || !selectedEnd) return alert("Выберите даты");
 
   const name = bookingForm.querySelector("input[placeholder='Ваше имя']")?.value.trim();
@@ -357,7 +357,7 @@ bookingForm?.addEventListener("submit", async (e) => {
   if (!user?.id) return alert("Откройте Mini App в Telegram!");
 
   const payload = {
-    car: currentCar.id,
+    car: currentHouse.id,
     start_date: selectedStart,
     end_date: selectedEnd,
     telegram_id: user.id,
