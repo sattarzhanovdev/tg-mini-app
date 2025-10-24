@@ -28,7 +28,6 @@ navLinks.forEach(link => {
     link.classList.add("active");
   });
 });
-
 const start = document.getElementById('start-date');
 const end = document.getElementById('end-date');
 const label = document.getElementById('date-label');
@@ -43,13 +42,12 @@ function updateLabel() {
   if (!start.value || !end.value) return;
   const s = new Date(start.value);
   const e = new Date(end.value);
-  const days = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
-
+  const diff = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
   const opts = { day: 'numeric', month: 'short' };
   const sStr = s.toLocaleDateString('ru-RU', opts);
   const eStr = e.toLocaleDateString('ru-RU', opts);
 
-  label.textContent = `${sStr} – ${eStr} · ${days} ${declineDays(days)}`;
+  label.textContent = `${sStr} – ${eStr} · ${diff} ${declineDays(diff)}`;
 }
 
 start.addEventListener('change', updateLabel);

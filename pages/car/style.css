@@ -105,19 +105,23 @@ header img{
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   border-radius: 12px;
   border: 1px solid #1B86FF;
-  background: rgba(27, 134, 255, 0.20);
+  background: rgba(27, 134, 255, 0.2);
   padding: 10px 12px;
   width: 90%;
+  height: 40px;
+  overflow: hidden;
 }
 
+/* Видимый слой */
 .fake-date {
   display: flex;
   align-items: center;
   gap: 8px;
-  pointer-events: none; /* чтобы клик шёл сквозь */
+  z-index: 1;
+  width: 100%;
+  pointer-events: none;
 }
 
 .fake-date img {
@@ -129,14 +133,23 @@ header img{
   font-size: 15px;
   font-family: "SF Pro medium";
   color: #000;
+  white-space: nowrap;
 }
 
-/* Невидимые, но кликабельные инпуты */
-.date-box input[type="date"] {
+/* Невидимый, но активный слой */
+.date-field {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
   opacity: 0;
   cursor: pointer;
+  z-index: 2;
+}
+
+#end-date {
+  left: 50%;
 }
 
 .date-input .icon {
