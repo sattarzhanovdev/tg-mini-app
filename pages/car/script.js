@@ -32,38 +32,27 @@ navLinks.forEach(link => {
 
 const startInput = document.getElementById('start-date');
 const endInput = document.getElementById('end-date');
-const text = document.getElementById('date-text');
-const dateBox = document.querySelector('.date-input');
+const text = document.getElementById('date-text'); // если хочешь выводить итог куда-то
 
-// функция для склонения "дней"
 const declineDays = (n) => {
   if (n % 10 === 1 && n % 100 !== 11) return 'день';
   if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'дня';
   return 'дней';
 };
 
-dateBox.addEventListener('click', () => {
-  startInput.showPicker();
-});
-
-startInput.addEventListener('change', () => {
-  endInput.min = startInput.value;
-  endInput.showPicker();
-});
-
-endInput.addEventListener('change', () => {
+function updateDateText() {
+  if (!startInput.value || !endInput.value) return;
   const startDate = new Date(startInput.value);
   const endDate = new Date(endInput.value);
-
-  if (isNaN(startDate) || isNaN(endDate)) return;
-
   const diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
   const options = { day: 'numeric', month: 'short' };
   const startStr = startDate.toLocaleDateString('ru-RU', options);
   const endStr = endDate.toLocaleDateString('ru-RU', options);
-
   text.textContent = `${startStr} – ${endStr} · ${diffDays} ${declineDays(diffDays)}`;
-});
+}
+
+startInput.addEventListener('change', updateDateText);
+endInput.addEventListener('change', updateDateText);
 
 const bookingModal = document.getElementById('bookingModal');
 const successModal = document.getElementById('successModal');

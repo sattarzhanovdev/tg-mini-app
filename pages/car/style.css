@@ -62,6 +62,8 @@ header img{
   letter-spacing: -0.125px;
 }
 
+
+
 .date-picker {
   padding: 0 15px;
 }
@@ -90,35 +92,39 @@ header img{
 .date-input {
   display: flex;
   align-items: center;
-  gap: 7px;
-  height: 34px;
-  width: 90%;
+  gap: 6px;
+  height: 36px;
   border-radius: 12px;
   border: 1px solid #1B86FF;
-  background: rgba(27, 134, 255, 0.20);
+  background: rgba(27, 134, 255, 0.2);
   padding: 0 12px;
-  cursor: pointer;
+  width: 90%;
 }
 
 .date-input .icon {
   width: 18px;
-  filter: brightness(0); /* белая иконка */
+  filter: brightness(0);
 }
 
-#date-text {
+.mobile-date {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  outline: none;
+  cursor: pointer;
+  color: #000;
   font-family: "SF Pro medium";
+}
+
+.mobile-date::-webkit-calendar-picker-indicator {
+  opacity: 1; /* показываем стандартную иконку на телефоне */
+  cursor: pointer;
+}
+
+.dash {
   font-size: 16px;
   color: #000;
-  user-select: none;
-}
-
-input[type="date"] {
-  display: none;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
 }
 
 
