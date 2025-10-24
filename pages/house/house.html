@@ -22,12 +22,16 @@
       <div class="date-picker">
         <p>Дата аренды</p>
         <div class="date-box">
-          <div class="fake-date" id="fake-date">
+          <div class="date-section">
             <img src="../../images/date.svg" alt="date">
-            <span id="date-label">Выберите дату бронирования</span>
+            <label for="start-date">От:</label>
+            <input type="date" id="start-date" class="date-field">
           </div>
-          <input type="date" id="start-date" class="date-field">
-          <input type="date" id="end-date" class="date-field">
+          <div class="date-section">
+            <img src="../../images/date.svg" alt="date">
+            <label for="end-date">До:</label>
+            <input type="date" id="end-date" class="date-field">
+          </div>
         </div>
       </div>
 
