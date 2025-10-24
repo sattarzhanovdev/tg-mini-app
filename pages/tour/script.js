@@ -28,39 +28,67 @@ navLinks.forEach(link => {
     link.classList.add("active");
   });
 });
+const start = document.getElementById('start-date');
+const end = document.getElementById('end-date');
+const label = document.getElementById('date-label');
 
-
-const startInput = document.getElementById('start-date');
-const endInput = document.getElementById('end-date');
-const text = document.getElementById('date-text');
-const dateBox = document.querySelector('.date-input');
-
-// функция для склонения "дней"
 const declineDays = (n) => {
   if (n % 10 === 1 && n % 100 !== 11) return 'день';
   if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'дня';
   return 'дней';
 };
 
-dateBox.addEventListener('click', () => {
-  startInput.showPicker();
+function updateLabel() {
+  if (!start.value || !end.value) return;
+  const s = new Date(start.value);
+  const e = new Date(end.value);
+  const diff = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
+  const opts = { day: 'numeric', month: 'short' };
+  const sStr = s.toLocaleDateString('ru-RU', opts);
+  const eStr = e.toLocaleDateString('ru-RU', opts);
+
+  label.textContent = `${sStr} – ${eStr} · ${diff} ${declineDays(diff)}`;
+}
+
+start.addEventListener('change', updateLabel);
+end.addEventListener('change', updateLabel);
+
+const bookingModal = document.getElementById('bookingModal');
+const successModal = document.getElementById('successModal');
+const openBooking = document.getElementById('openBooking');
+const closeSuccess = document.getElementById('closeSuccess');
+const bookingForm = document.getElementById('bookingForm');
+const closeBtn = document.querySelector('.close');
+
+// открыть форму бронирования
+openBooking.addEventListener('click', () => {
+  bookingModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 });
 
-startInput.addEventListener('change', () => {
-  endInput.min = startInput.value;
-  endInput.showPicker();
+// закрыть форму бронирования
+closeBtn.addEventListener('click', () => {
+  bookingModal.style.display = 'none';
+  document.body.style.overflow = 'auto';
 });
 
-endInput.addEventListener('change', () => {
-  const startDate = new Date(startInput.value);
-  const endDate = new Date(endInput.value);
+// отправка формы
+bookingForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  bookingModal.style.display = 'none';
+  successModal.style.display = 'flex';
+});
 
-  if (isNaN(startDate) || isNaN(endDate)) return;
+// закрыть окно успешной заявки
+closeSuccess.addEventListener('click', () => {
+  successModal.style.display = 'none';
+  document.body.style.overflow = 'auto';
+});
 
-  const diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-  const options = { day: 'numeric', month: 'short' };
-  const startStr = startDate.toLocaleDateString('ru-RU', options);
-  const endStr = endDate.toLocaleDateString('ru-RU', options);
-
-  text.textContent = `${startStr} – ${endStr} · ${diffDays} ${declineDays(diffDays)}`;
+// клик вне модалки закрывает её
+window.addEventListener('click', (e) => {
+  if (e.target === successModal) {
+    successModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
 });
