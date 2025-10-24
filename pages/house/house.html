@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>House</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <header>
+      <div class="left">
+        <h4 id="user-name"></h4>
+        <p>Россия, Бишкек</p>
+      </div>
+      <img src="https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=612x612&w=0&k=20&c=dhV2p1JwmloBTOaGAtaA3AW1KSnjsdMt7-U_3EZElZ0=" alt="profile" id="photo-profile">
+    </header>
+
+    <main>
+      <h4 class="title">Недвижимость</h4>
+
+      <div class="date-picker">
+        <form class="date">
+          <p>Дата аренды</p>
+          <div class="date-input">
+            <img src="../../images/date.svg" alt="date" class="icon">
+            <span id="date-text">Выберите дату бронирования</span>
+            <input type="date" id="start-date">
+            <input type="date" id="end-date">
+          </div>
+        </form>
+      </div>
+
+      <div class="category-container">
+        <div class="category-picker">
+          <p>
+            Выберите тип дома
+          </p>
+          <div class="categories">
+            <div class="category active">
+              <img src="../../images/car_cat.svg" alt="car">
+              <p>Апартаменты</p>
+            </div>
+            <div class="category">
+              <img src="../../images/car_cat.svg" alt="car">
+              <p>Виллы</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="result">Найдено <span class="amount">7</span> помещений в категории "<span class="category_type">Апартаменты</span>"</p>
+
+      <div class="cards">
+        <div class="card">
+          <img src="../../images/car_img.png" alt="car">
+          <div class="info">
+            <div>
+              <h4>Lixiang L7 Ultra</h4>
+              <p>2024, Black</p>
+            </div>
+            <div class="goods">
+              <li>
+                Без предоплаты
+              </li>
+              <li>
+                Новое авто
+              </li>
+              <li>
+                Для путешествий
+              </li>
+            </div>
+            <div class="line"></div>
+            <div class="price">
+              <h4>1300$</h4>
+              <p>
+                400$/день (3 дня) <br>
+                Депозит: 2000$
+              </p>
+            </div>
+
+            <button>Забронировать</button>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <footer>
+      <ul class="bottom__bar">
+        <li>
+          <a href="#" onclick="window.location.href = '../../index.html'">
+            <img src="../../images/nav/home.svg" alt="home">
+            Главное
+          </a>
+        </li>
+        <li>
+          <a href="#" onclick="window.location.href = '../car/car.html'">
+            <img src="../../images/nav/car.svg" alt="car">
+            Авто
+          </a>
+        </li>
+        <li>
+          <a href="#" class="active">
+            <img src="../../images/nav/building.svg" alt="building">
+            Недвижимость
+          </a>
+        </li>
+        <li>
+          <a href="#" onclick="window.location.href = '../moto/moto.html'">
+            <img src="../../images/nav/moto.svg" alt="moto">
+            Мото
+          </a>
+        </li>
+        <li>
+          <a href="#" onclick="window.location.href = '../tour/tour.html'"> 
+            <img src="../../images/nav/map.svg" alt="map">
+            Экскурсии
+          </a>
+        </li>
+        <!-- <li>
+          <a href="#">
+            <img src="../../images/nav/user.svg" alt="user">
+            Профиль
+          </a>
+        </li> -->
+      </ul>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+</html>

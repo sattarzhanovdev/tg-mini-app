@@ -17,7 +17,7 @@
     </header>
 
     <main>
-      <h4 class="title">Автомобили</h4>
+      <h4 class="title">Мотоциклы</h4>
 
       <div class="date-picker">
         <form class="date">
@@ -33,31 +33,37 @@
 
       <div class="category-container">
         <div class="category-picker">
-          <p>
-            Выберите класс автомобиля
-          </p>
+          <p>Выберите тип мотоцикла</p>
           <div class="categories">
             <div class="category active">
               <img src="../../images/car_cat.svg" alt="car">
-              <p>Компакт</p>
+              <p>Скутер</p>
             </div>
             <div class="category">
               <img src="../../images/car_cat.svg" alt="car">
-              <p>Компакт</p>
+              <p>Maxi</p>
             </div>
             <div class="category">
               <img src="../../images/car_cat.svg" alt="car">
-              <p>Компакт</p>
+              <p>Спортивные</p>
             </div>
             <div class="category">
               <img src="../../images/car_cat.svg" alt="car">
-              <p>Компакт</p>
+              <p>Чоппер</p>
+            </div>
+            <div class="category">
+              <img src="../../images/car_cat.svg" alt="car">
+              <p>Чоппер</p>
+            </div>
+            <div class="category">
+              <img src="../../images/car_cat.svg" alt="car">
+              <p>Чоппер</p>
             </div>
           </div>
         </div>
       </div>
 
-      <p class="result">Найдено <span class="amount">7</span> машин в категории "<span class="category_type">Седан</span>"</p>
+      <p class="result">Найдено <span class="amount">7</span> мотоциклов в категории "<span class="category_type">Скутер</span>"</p>
 
       <div class="cards">
         <div class="card">
@@ -105,84 +111,10 @@
               </p>
             </div>
 
-            <button id="openBooking">Забронировать</button>
+            <button>Забронировать</button>
           </div>
         </div>
       </div>
-      <div class="modal" id="bookingModal">
-        <div class="modal-content">
-          <span class="close">&times;</span>
-          <h3>Детали заказа</h3>
-
-          <div class="card">
-            <img src="../../images/car_img.png" alt="car" class="photo_product">
-            <h4>Lixiang L7 Ultra</h4>
-            <div>
-              <li>
-                <img src="../../images/car_parameters/motor.svg" alt="motor">
-                1.6L
-              </li>
-              <li>
-                <img src="../../images/car_parameters/settings.svg" alt="motor">
-                АКПП
-              </li>
-              <li>
-                <img src="../../images/car_parameters/road.svg" alt="motor">
-                700km
-              </li>
-              <li>
-                <img src="../../images/car_parameters/oil.svg" alt="motor">
-                Гибрид
-              </li>
-            </div>
-            <p class="description">Премиальный гибридный кроссовер (range-extender) мощностью 449 л.с., с запасом хода до 1100 км и расширенным набором комфорта и ассистентов.</p>
-            <div class="line"></div>
-            <div class="row">
-              <h>Итого: <span class="price">1200$</span></h4>
-              <p>21 окт - 24 окт · 4 дня</p>
-            </div>
-          </div>
-
-          <form class="booking-form"  id="bookingForm" >
-            <label>Дата аренды</label>
-            <div class="input">
-              <img src="../../images/date.svg" alt="date">
-              <span class="date-time"></span>
-            </div>
-
-            <label>Имя</label>
-            <div class="input">
-              <img src="../../images/user.svg" alt="user">
-              <input type="text" placeholder="Ваше имя">
-            </div>
-
-            <label>Номер телефона</label>
-            <div class="input">
-              <img src="../../images/phone.svg" alt="phone">
-              <input type="tel" placeholder="Ваш номер телефона">
-            </div>
-
-            <label>Комментарии</label>
-            <div class="input">
-              <img src="../../images/comment.svg" alt="comment">
-              <input type="text" placeholder="Ваш комментарий">
-            </div>
-
-            <button type="submit" class="btn">Забронировать</button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Модалка "Заявка принята" -->
-      <div class="modal" id="successModal">
-        <div class="success-content">
-          <img src="../../images/check.svg" alt="success" class="success-icon">
-          <h2>Заявка принята!</h2>
-          <p class="info-text">Менеджер свяжется с вами в течение 15 минут</p>
-          <button id="closeSuccess" class="btn">Закрыть</button>
-        </div>
-      </div>
-
     </main>
     
     <footer>
@@ -194,7 +126,7 @@
           </a>
         </li>
         <li>
-          <a href="#" class="active" >
+          <a href="#" onclick="window.location.href = '../car/car.html'">
             <img src="../../images/nav/car.svg" alt="car">
             Авто
           </a>
@@ -202,11 +134,11 @@
         <li>
           <a href="#" onclick="window.location.href = '../house/house.html'">
             <img src="../../images/nav/building.svg" alt="building">
-            Помещение
+            Недвижимость
           </a>
         </li>
         <li>
-          <a href="#" onclick="window.location.href = '../moto/moto.html'">
+          <a href="#" class="active">
             <img src="../../images/nav/moto.svg" alt="moto">
             Мото
           </a>
