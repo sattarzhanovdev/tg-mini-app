@@ -253,11 +253,11 @@ function renderHouses(houses) {
       <div class="card ${isBooked ? "unavailable" : ""}">
         <img src="${h.images?.[0]?.image || "../../images/no_photo.png"}" alt="${h.title}">
         <div class="info">
-          <div>
+          <div style="display: flex; align-items: center; justify-content: space-between;">
             <h4>${h.title}</h4>
             <p>${h.area ?? "—"} кв/м</p>
           </div>
-          ${isBooked ? `<p class="booked">${bookedText}</p>` : ""}
+          ${isBooked ? `<p class="booked" style="color: red; margin-top: 6px;">${bookedText}</p>` : ""}
           <div class="goods">
             ${(h.features || []).map((v) => `<li>${v.title}</li>`).join("")}
           </div>
@@ -347,54 +347,61 @@ bookingModal?.addEventListener("click", (e) => {
    ================ */
 bookingForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!currentHouse) return alert("Сначала выберите объект");
-  if (!selectedStart || !selectedEnd) return alert("Выберите даты аренды");
+  if (!currentMoto) return alert("Выберите мотоцикл");
+  if (!selectedStart || !selectedEnd) return alert("Выберите даты");
 
-  // Берём поля из текущей вёрстки (по типам/placeholder'ам)
-  const name = bookingForm.querySelector("input[type='text'][placeholder='Ваше имя']")?.value?.trim() || "";
-  const phone = bookingForm.querySelector("input[type='tel']")?.value?.trim() || "";
-  const comment = bookingForm.querySelector("input[type='text'][placeholder='Ваш комментарий']")?.value?.trim() || "";
+  const name = bookingForm.querySelector("input[placeholder='Ваше имя']")?.value.trim();
+  const phone = bookingForm.querySelector("input[placeholder='Ваш номер телефона']")?.value.trim();
+  const comment = bookingForm.querySelector("input[placeholder='Ваш комментарий']")?.value.trim();
+
+  if (!user?.id) return alert("Откройте Mini App в Telegram!");
 
   const payload = {
-    house: currentHouse.id,
+    motorcycle: currentMoto.id,
     start_date: selectedStart,
     end_date: selectedEnd,
-    telegram_id: user?.id,
+    telegram_id: user.id,
     client_name: name,
     phone_number: phone,
-    comment: comment
+    comment,
   };
 
   const btn = bookingForm.querySelector(".btn");
-  const prev = btn?.textContent;
-  if (btn) { btn.disabled = true; btn.textContent = "Отправка..."; }
+  const prevText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Отправка...";
 
   try {
-    const r = await fetch(`${API}/bookings/`, {
+    const res = await fetch(`${API}/bookings/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!r.ok) {
-      let errText = "";
-      try { errText = await r.text(); } catch (_) {}
-      throw new Error(errText || "Ошибка бронирования");
-    }
 
-    // Уведомление в Telegram WebApp (если доступно)
+    if (!res.ok) throw new Error(await res.text());
+
+    // ✅ успех: закрываем модалку бронирования и показываем successModal
     tg?.HapticFeedback?.notificationOccurred?.("success");
-    tg?.showAlert?.("Бронирование отправлено!");
+    bookingModal.style.display = "none";
+    successModal.style.display = "flex";
+    document.body.style.overflow = "hidden";
 
-    await fetchBookings(); // обновим «занятость»
+    // обновляем список, чтобы занятость обновилась
+    await fetchBookings();
     applyFilters();
-    closeBooking();
+
   } catch (err) {
     console.error(err);
-    alert("Не удалось отправить бронирование");
     tg?.HapticFeedback?.notificationOccurred?.("error");
+    alert("Ошибка при бронировании");
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = prev || "Забронировать"; }
+    btn.disabled = false;
+    btn.textContent = prevText;
   }
+});
+closeSuccess?.addEventListener("click", () => {
+  successModal.style.display = "none";
+  document.body.style.overflow = "";
 });
 
 /* ================

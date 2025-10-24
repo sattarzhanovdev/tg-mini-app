@@ -251,7 +251,15 @@ header img{
   background: #FCFCFC;
 }
 
+.cards .card .photo_moto{
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
 .cards .card .info{
+  
   margin-top: 24px;
   padding: 15px;
 }
@@ -282,7 +290,10 @@ header img{
 .cards .card .info div{
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* justify-content: space-between; */
+  gap: 10px;
+  width: 100%;
+  overflow-x: scroll;
 }
 
 .cards .card .info div li{
@@ -291,6 +302,7 @@ header img{
   align-items: center;
   gap: 4px;
   margin-top: 14px;
+  text-wrap: nowrap;
 }
 
 
