@@ -68,9 +68,19 @@ header img{
   padding: 0 15px;
 }
 
+.date-picker button{
+  width: 100%;
+  height: 46px;
+  margin-top: 6px;
+  background: #1B86FF;
+  color: white;
+  border: 0;
+  border-radius: 12px;
+}
+
 .date {
   padding: 10px 15px;
-  width: 90%;
+  /* width: 90%; */
   flex-shrink: 0;
   border-radius: 12px;
   border: 1px solid #F5F5F5;
@@ -109,7 +119,6 @@ header img{
   border: 1px solid #1B86FF;
   background: rgba(27, 134, 255, 0.20);
   padding: 10px 12px;
-  width: 90%;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -213,6 +222,7 @@ header img{
 }
 
 .category-picker .categories .category img {
+  width: 20px;
   filter: brightness(0) ;
 }
 
@@ -239,9 +249,30 @@ header img{
   background: #FCFCFC;
 }
 
+.cards .card img{
+  width: 100%;
+  border-radius: 12px;
+}
+
 .cards .card .info{
   margin-top: 24px;
   padding: 15px;
+}
+
+.booked {
+  color: #ff3b30;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 6px;
+}
+
+.card.unavailable {
+  opacity: 0.8;
+}
+
+.card.unavailable .openBooking {
+  background: #cfcfcf;
+  cursor: not-allowed;
 }
 
 
@@ -270,7 +301,7 @@ header img{
 .cards .card .info div{
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
 }
 
 .cards .card .info div li{
