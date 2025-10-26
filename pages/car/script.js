@@ -61,7 +61,7 @@ const BOOKING_STATUSES_BLOCK = new Set(["active", "pending"]);
 const dayMs = 24 * 60 * 60 * 1000;
 const toLocalDate = (iso) => new Date(iso + "T00:00:00");
 const fmtRu = (d) => d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
-const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} $`;
+const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} ฿`;
 
 const daysInclusive = (a, b) => Math.max(1, Math.round((toLocalDate(b) - toLocalDate(a)) / dayMs) + 1);
 const declineDays = (n) => {
@@ -250,8 +250,8 @@ function renderCars(cars) {
           <div class="line"></div>
 
           <div class="price">
-            <h4>${car.price_per_day}$</h4>
-            <p>${car.price_per_day}$/день<br>Депозит: ${car.deposit}$</p>
+            <h4>${car.price_per_day}฿</h4>
+            <p>${car.price_per_day}$/день<br>Депозит: ${car.deposit}฿</p>
           </div>
 
           ${

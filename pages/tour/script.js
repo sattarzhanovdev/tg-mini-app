@@ -61,7 +61,7 @@ const API = "https://telegram-mini-app-b3ah.onrender.com/api/excursions";
 const dayMs = 24 * 60 * 60 * 1000;
 const toLocalDate = (iso) => new Date(iso + "T00:00:00");
 const fmtRu = (d) => d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
-const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} $`;
+const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} ฿`;
 const daysInclusive = (a, b) => Math.max(1, Math.round((toLocalDate(b) - toLocalDate(a)) / dayMs) + 1);
 const overlaps = (aStart, aEnd, bStart, bEnd) => (aStart <= bEnd) && (aEnd >= bStart);
 

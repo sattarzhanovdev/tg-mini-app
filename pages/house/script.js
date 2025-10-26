@@ -71,7 +71,7 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const dayMs = 24 * 60 * 60 * 1000;
 const toLocalDate = (iso) => new Date(iso + "T00:00:00");
 const fmtRu = (d) => d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
-const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} $`;
+const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} ฿`;
 
 // Инклюзивное количество дней (если нужно «по ночам» — используйте эксклюзивно)
 const daysInclusive = (startIso, endIso) =>

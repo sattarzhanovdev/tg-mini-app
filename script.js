@@ -42,7 +42,7 @@ const cardsContainer = document.getElementById("new-cards");
 const API_BASE = "https://telegram-mini-app-b3ah.onrender.com/api";
 
 function rub(n) {
-  return `${Number(n || 0).toLocaleString("ru-RU")} $`;
+  return `${Number(n || 0).toLocaleString("ru-RU")} ฿`;
 }
 
 /**
@@ -137,8 +137,8 @@ function renderCards(items, type = "default") {
           </div>
           <div class="line"></div>
           <div class="price">
-            <h4>${item.price_per_day || 0}$</h4>
-            <p>Депозит: ${item.deposit || 0}$</p>
+            <h4>${item.price_per_day || 0}฿</h4>
+            <p>Депозит: ${item.deposit || 0}฿</p>
           </div>
           <button>Забронировать</button>
         </div>
