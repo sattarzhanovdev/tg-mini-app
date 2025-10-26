@@ -18,11 +18,22 @@ body{
   margin-bottom: 200px;
 }
 
+.logo{
+  margin-top: 40px;
+  margin-bottom: 40px;
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 15px;
+}
+
+.logo img{
+  height: 40px  ;
+}
+
 header{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 120px;
   padding: 0 15px;
 }
 
@@ -51,7 +62,7 @@ header img{
 .title{
   margin: 0;
   margin-top: 40px;
-  margin-bottom: 17px;
+  margin-bottom: 10px;
   margin-left: 15px;
   color: black;
   font-family: "SF Pro semibold";
@@ -62,7 +73,15 @@ header img{
   letter-spacing: -0.125px;
 }
 
-
+.filter{
+  padding: 0 15px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #99A2AD;
+  margin-bottom: 40px;
+}
 
 .date-picker {
   padding: 0 15px;
@@ -561,6 +580,74 @@ header img{
 .btn:hover {
   background: #0069d9;
 }
+
+/* ========== Фильтр-модалка ========== */
+.filter-modal {
+  max-width: 420px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.filter-modal h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.filter-modal .input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0f6ff;
+  border: 1px solid #cfd8e6;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 15px;
+}
+
+.filter-modal .input img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+}
+
+.filter-modal input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  background: transparent;
+}
+
+.price-filter {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.price-filter > div {
+  flex: 1;
+}
+
+.filter-modal .btn {
+  width: 100%;
+  margin-top: 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.filter-modal .btn:active {
+  background: #006ae6;
+}
+
+
+
 
 
 

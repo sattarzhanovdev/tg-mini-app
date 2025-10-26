@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
+    <div class="logo">
+      <img src="../../images/logo.svg" alt="logo">
+    </div>
     <header>
       <div class="left">
         <h4 id="user-name"></h4>
@@ -18,7 +21,10 @@
 
     <main>
       <h4 class="title">Экскурсии</h4>
-
+      <p class="filter">
+        <img src="../../images/sliders.svg" alt="sliders">
+        Настроить фильтр
+      </p>  
       <div class="date-picker">
         <p>Дата аренды</p>
         <div class="date-box">
@@ -40,22 +46,7 @@
         <div class="category-picker">
           <p>Выберите тип экскурсии</p>
           <div class="categories">
-            <div class="category active">
-              <img src="../../images/car_cat.svg" alt="car">
-              <p>Острова</p>
-            </div>
-            <div class="category">
-              <img src="../../images/car_cat.svg" alt="car">
-              <p>Квадро</p>
-            </div>
-            <div class="category">
-              <img src="../../images/car_cat.svg" alt="car">
-              <p>Яхта</p>
-            </div>
-            <div class="category">
-              <img src="../../images/car_cat.svg" alt="car">
-              <p>Гидроциклы</p>
-            </div>
+            
           </div>
         </div>
       </div>
@@ -63,42 +54,13 @@
       <!-- <p class="result">Найдено <span class="amount">7</span> экскурсии в категории "<span class="category_type">Острова</span>"</p> -->
 
       <div class="cards">
-        <div class="card">
-          <img src="../../images/car_img.png" alt="car">
-          <div class="info">
-            <div>
-              <h4>Lixiang L7 Ultra</h4>
-              <p>2024, Black</p>
-            </div>
-            <div class="goods">
-              <li>
-                Без предоплаты
-              </li>
-              <li>
-                Новое авто
-              </li>
-              <li>
-                Для путешествий
-              </li>
-            </div>
-            <div class="line"></div>
-            <div class="price">
-              <h4>1300$</h4>
-              <p>
-                400$/день (3 дня) <br>
-                Депозит: 2000$
-              </p>
-            </div>
-
-            <button id="openBooking">Забронировать</button>
-          </div>
-        </div>
+        
       </div>
       <div class="modal" id="bookingModal">
         <div class="modal-content">
           <span class="close">&times;</span>
           <h3>Детали заказа</h3>
-
+          
           <div class="card">
             <img src="../../images/car_img.png" alt="car" class="photo_product">
             <h4>Lixiang L7 Ultra</h4>
@@ -165,6 +127,35 @@
           <h2>Заявка принята!</h2>
           <p class="info-text">Менеджер свяжется с вами в течение 15 минут</p>
           <button id="closeSuccess" class="btn">Закрыть</button>
+        </div>
+      </div>
+
+      <div class="modal" id="filterModal">
+        <div class="modal-content filter-modal">
+          <span class="close">&times;</span>
+          <h3>Фильтрация</h3>
+
+          <form id="filterForm">
+            <div class="price-filter">
+              <div>
+                <label>Цена от</label>
+                <div class="input">
+                  <img src="../../images/dollar.svg" alt="price">
+                  <input type="number" id="priceFrom" placeholder="От">
+                </div>
+              </div>
+
+              <div>
+                <label>Цена до</label>
+                <div class="input">
+                  <img src="../../images/dollar.svg" alt="price">
+                  <input type="number" id="priceTo" placeholder="До">
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn">Найти</button>
+          </form>
         </div>
       </div>
     </main>

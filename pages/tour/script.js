@@ -234,6 +234,49 @@ bookingClose?.addEventListener("click", () => {
   document.body.style.overflow = "";
 });
 
+
+const filterBtn = document.querySelector(".filter");
+const filterModal = document.getElementById("filterModal");
+const filterClose = filterModal.querySelector(".close");
+const filterForm = document.getElementById("filterForm");
+
+filterBtn?.addEventListener("click", () => {
+  filterModal.style.display = "flex";
+  document.body.style.overflow = "hidden";
+});
+
+filterClose?.addEventListener("click", () => {
+  filterModal.style.display = "none";
+  document.body.style.overflow = "";
+});
+
+filterModal?.addEventListener("click", (e) => {
+  if (e.target.id === "filterModal") {
+    filterModal.style.display = "none";
+    document.body.style.overflow = "";
+  }
+});
+
+// Обработка формы
+filterForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const from = Number(document.getElementById("priceFrom").value);
+  const to = Number(document.getElementById("priceTo").value);
+
+  // Пример фильтрации уже загруженных машин
+  const filtered = allTours.filter(car => {
+    const matchPrice = (!from || car.price_per_day >= from) && (!to || car.price_per_day <= to);
+    return matchPrice;
+  });
+
+  renderTours(filtered);
+  filterModal.style.display = "none";
+  document.body.style.overflow = "";
+});
+
+
+
 /* ================
    Booking form submit
    ================ */

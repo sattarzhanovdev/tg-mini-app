@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="./style.css">
   </head>
   <body>
+    <div class="logo">
+      <img src="../../images/logo.svg" alt="logo">
+    </div>
     <header>
       <div class="left">
         <h4 id="user-name"></h4>
@@ -18,6 +21,10 @@
 
     <main>
       <h4 class="title">Автомобили</h4>
+      <p class="filter">
+        <img src="../../images/sliders.svg" alt="sliders">
+        Настроить фильтр
+      </p>
 
       <div class="date-picker">
         <p>Дата аренды</p>
@@ -43,22 +50,7 @@
             Выберите класс автомобиля
           </p>
           <div class="categories">
-            <div class="category active">
-              <img src="../../images/car_cat.svg" alt="car">
-              <p>Компакт</p>
-            </div>
-            <div class="category">
-              <img src="../../images/car_cat.svg" alt="car">
-              <p>Компакт</p>
-            </div>
-            <div class="category">
-              <img src="../../images/car_cat.svg" alt="car">
-              <p>Компакт</p>
-            </div>
-            <div class="category">
-              <img src="../../images/car_cat.svg" alt="car">
-              <p>Компакт</p>
-            </div>
+            
           </div>
         </div>
       </div>
@@ -139,6 +131,47 @@
           <h2>Заявка принята!</h2>
           <p class="info-text">Менеджер свяжется с вами в течение 15 минут</p>
           <button id="closeSuccess" class="btn">Закрыть</button>
+        </div>
+      </div>
+
+      <div class="modal" id="filterModal">
+        <div class="modal-content filter-modal">
+          <span class="close">&times;</span>
+          <h3>Фильтрация</h3>
+
+          <form id="filterForm">
+            <label>Выберите марку</label>
+            <div class="input">
+              <img src="../../images/car_filter.svg" alt="car">
+              <input type="text" id="filterBrand" placeholder="Марка">
+            </div>
+
+            <label>Выберите год</label>
+            <div class="input">
+              <img src="../../images/date.svg" alt="year">
+              <input type="number" id="filterYear" placeholder="Год" min="1900" max="2100">
+            </div>
+
+            <div class="price-filter">
+              <div>
+                <label>Цена от</label>
+                <div class="input">
+                  <img src="../../images/dollar.svg" alt="price">
+                  <input type="number" id="priceFrom" placeholder="От">
+                </div>
+              </div>
+
+              <div>
+                <label>Цена до</label>
+                <div class="input">
+                  <img src="../../images/dollar.svg" alt="price">
+                  <input type="number" id="priceTo" placeholder="До">
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn">Найти</button>
+          </form>
         </div>
       </div>
 
