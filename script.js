@@ -39,7 +39,7 @@ navLinks.forEach(link => {
    Новые предложения — пример загрузки с API
    ============================== */
 const cardsContainer = document.getElementById("new-cards");
-const API_BASE = "https://telegram-mini-app-b3ah.onrender.com/api";
+const API_BASE = "https://rentareabackend.pythonanywhere.com/api";
 
 function rub(n) {
   return `${Number(n || 0).toLocaleString("ru-RU")} ฿`;

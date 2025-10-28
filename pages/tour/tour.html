@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cars</title>
+    <title>Экскурсии — Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="./style.css">
   </head>
@@ -11,20 +11,15 @@
     <div class="logo">
       <img src="../../images/logo.svg" alt="logo">
     </div>
-    <!-- <header>
-      <div class="left">
-        <h4 id="user-name"></h4>
-        <p class="city"></p>
-      </div>
-      <img src="https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=612x612&w=0&k=20&c=dhV2p1JwmloBTOaGAtaA3AW1KSnjsdMt7-U_3EZElZ0=" alt="profile" id="photo-profile">
-    </header> -->
 
     <main>
       <h4 class="title">Экскурсии</h4>
+
       <p class="filter">
         <img src="../../images/sliders.svg" alt="sliders">
         Настроить фильтр
-      </p>  
+      </p>
+
       <div class="date-picker">
         <p>Дата аренды</p>
         <div class="date-box">
@@ -45,63 +40,52 @@
       <div class="category-container">
         <div class="category-picker">
           <p>Выберите тип экскурсии</p>
-          <div class="categories">
-            
-          </div>
+          <div class="categories"></div>
         </div>
       </div>
 
-      <!-- <p class="result">Найдено <span class="amount">7</span> экскурсии в категории "<span class="category_type">Острова</span>"</p> -->
+      <div class="cards"></div>
 
-      <div class="cards">
-        
-      </div>
+      <!-- Модалка бронирования -->
       <div class="modal" id="bookingModal">
         <div class="modal-content">
           <span class="close">&times;</span>
           <h3>Детали заказа</h3>
 
           <div class="card">
-            <img src="../../images/car_img.png" alt="car" class="photo_product">
-            <h4>Lixiang L7 Ultra</h4>
-            <p class="description">Премиальный гибридный кроссовер (range-extender) мощностью 449 л.с., с запасом хода до 1100 км и расширенным набором комфорта и ассистентов.</p>
+            <img src="../../images/no_photo.png" alt="tour" class="photo_product">
+            <h4 class="tour-title">Экскурсия</h4>
+            <p class="description"></p>
+
             <div class="line"></div>
-            <div class="date-range-picker">
-              <label>Дата аренды:</label>
-              <div class="inputs">
-                <input type="date" id="modal-start" />
-                <input type="date" id="modal-end" />
-              </div>
+
+            <div class="date-info">
+              <p><b>Дата аренды:</b> <span class="date-pick-result">—</span></p>
             </div>
-            <p class="date-pick-result"></p>
-            <div class="row">
+
+            <div class="row" style="display:flex;align-items:center;justify-content:space-between;">
               <h4>Итого: <span class="price">По договоренности</span></h4>
+              <small class="hint">Цена указана за человека</small>
             </div>
           </div>
 
-          <form class="booking-form"  id="bookingForm" >
-            <!-- <label>Дата аренды</label>
-            <div class="input">
-              <img src="../../images/date.svg" alt="date">
-              <span class="date-time"></span>
-            </div> -->
-
+          <form class="booking-form" id="bookingForm">
             <label>Имя</label>
             <div class="input">
               <img src="../../images/user.svg" alt="user">
-              <input type="text" placeholder="Ваше имя">
+              <input type="text" placeholder="Ваше имя" required />
             </div>
 
             <label>Номер телефона</label>
             <div class="input">
               <img src="../../images/phone.svg" alt="phone">
-              <input type="tel" placeholder="Ваш номер телефона">
+              <input type="tel" placeholder="Ваш номер телефона" required />
             </div>
 
             <label>Комментарии</label>
             <div class="input">
               <img src="../../images/comment.svg" alt="comment">
-              <input type="text" placeholder="Ваш комментарий">
+              <input type="text" placeholder="Ваш комментарий" />
             </div>
 
             <button type="submit" class="btn">Забронировать</button>
@@ -109,7 +93,7 @@
         </div>
       </div>
 
-      <!-- Модалка "Заявка принята" -->
+      <!-- Модалка успеха -->
       <div class="modal" id="successModal">
         <div class="success-content">
           <img src="../../images/check.svg" alt="success" class="success-icon">
@@ -119,6 +103,7 @@
         </div>
       </div>
 
+      <!-- Фильтр -->
       <div class="modal" id="filterModal">
         <div class="modal-content filter-modal">
           <span class="close">&times;</span>
@@ -128,21 +113,13 @@
             <div class="price-filter">
               <div>
                 <label>Цена от</label>
-                <div class="input">
-                  <img src="../../images/dollar.svg" alt="price">
-                  <input type="number" id="priceFrom" placeholder="От">
-                </div>
+                <input type="number" id="priceFrom" placeholder="От">
               </div>
-
               <div>
                 <label>Цена до</label>
-                <div class="input">
-                  <img src="../../images/dollar.svg" alt="price">
-                  <input type="number" id="priceTo" placeholder="До">
-                </div>
+                <input type="number" id="priceTo" placeholder="До">
               </div>
             </div>
-
             <button type="submit" class="btn">Найти</button>
           </form>
         </div>
@@ -151,43 +128,13 @@
     
     <footer>
       <ul class="bottom__bar">
-        <li>
-          <a href="#" onclick="window.location.href = '../../index.html'">
-            <img src="../../images/nav/home.svg" alt="home">
-            Главное
-          </a>
-        </li>
-        <li>
-          <a href="#" onclick="window.location.href = '../car/car.html'">
-            <img src="../../images/nav/car.svg" alt="car">
-            Авто
-          </a>
-        </li>
-        <li>
-          <a href="#" onclick="window.location.href = '../house/house.html'">
-            <img src="../../images/nav/building.svg" alt="building">
-            Недвижимость
-          </a>
-        </li>
-        <li>
-          <a href="#" onclick="window.location.href = '../moto/moto.html'">
-            <img src="../../images/nav/moto.svg" alt="moto">
-            Мото
-          </a>
-        </li>
-        <li>
-          <a href="#" class="active"> 
-            <img src="../../images/nav/map.svg" alt="map">
-            Экскурсии
-          </a>
-        </li>
-        <!-- <li>
-          <a href="#">
-            <img src="../../images/nav/user.svg" alt="user">
-            Профиль
-          </a>
-        </li> -->
+        <li><a href="../../index.html"><img src="../../images/nav/home.svg" alt="home"> Главное</a></li>
+        <li><a href="../car/car.html"><img src="../../images/nav/car.svg" alt="car"> Авто</a></li>
+        <li><a href="../house/house.html"><img src="../../images/nav/building.svg" alt="building"> Недвижимость</a></li>
+        <li><a href="../moto/moto.html"><img src="../../images/nav/moto.svg" alt="moto"> Мото</a></li>
+        <li><a class="active" href="#"><img src="../../images/nav/map.svg" alt="map"> Экскурсии</a></li>
       </ul>
+    </footer>
 
     <script src="./script.js"></script>
   </body>

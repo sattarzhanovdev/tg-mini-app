@@ -1,341 +1,284 @@
 "use strict";
 
-/* ===========================
-   Telegram Mini App bootstrap
-   =========================== */
+/* Telegram Mini App */
 const tg = window.Telegram?.WebApp;
 tg?.ready?.();
 tg?.expand?.();
-
 const user = tg?.initDataUnsafe?.user ?? null;
 
-const nameElement = document.getElementById("user-name");
-const photoElement = document.getElementById("photo-profile");
-
-if (nameElement && photoElement) {
-  if (user) {
-    nameElement.textContent = `Здравствуйте, ${user.first_name || "гость"}!`;
-    photoElement.src =
-      user.photo_url ||
-      "https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=612x612&w=0&k=20&c=dhV2p1JwmloBTOaGAtaA3AW1KSnjsdMt7-U_3EZElZ0=";
-  } else {
-    nameElement.textContent = "Здравствуйте, гость!";
-    photoElement.src =
-      "https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=612x612&w=0&k=20&c=dhV2p1JwmloBTOaGAtaA3AW1KSnjsdMt7-U_3EZElZ0=";
-  }
-}
-
-/* ================
-   DOM references
-   ================ */
+/* DOM */
 const categoriesContainer = document.querySelector(".categories");
 const cardsContainer = document.querySelector(".cards");
 const startInput = document.getElementById("start-date");
-const endInput = document.getElementById("end-date");
-const showBtn = document.querySelector(".show");
+const endInput   = document.getElementById("end-date");
+const showBtn    = document.querySelector(".show");
 
-// Модалки
+/* Модалки */
 const bookingModal = document.getElementById("bookingModal");
-const bookingForm = document.getElementById("bookingForm");
+const bookingClose = bookingModal?.querySelector(".close");
+const bookingForm  = document.getElementById("bookingForm");
 const successModal = document.getElementById("successModal");
 const closeSuccess = document.getElementById("closeSuccess");
-const bookingClose = bookingModal?.querySelector(".close");
 
-/* ================
-   State
-   ================ */
-let allMotorcycles = [];
-let allCategories = [];
-let allBookings = [];
+/* Элементы модалки */
+const modalPhoto = bookingModal?.querySelector(".photo_product");
+const modalTitle = bookingModal?.querySelector(".moto-title");
+const modalDesc  = bookingModal?.querySelector(".description");
+const modalRange = bookingModal?.querySelector(".date-pick-result");
+const modalTotal = bookingModal?.querySelector(".price");
 
-let selectedCategory = null;
-let selectedStart = null;
-let selectedEnd = null;
-let currentMoto = null;
+/* Фильтр (цена) */
+const filterBtn   = document.querySelector(".filter");
+const filterModal = document.getElementById("filterModal");
+const filterClose = filterModal?.querySelector(".close");
+const filterForm  = document.getElementById("filterForm");
 
-const BOOKING_STATUSES_BLOCK = new Set(["active", "pending"]);
-
-
-const brandsSelect = document.querySelector('.select_marka')
-const modelsSelect = document.querySelector('.select_model')
-
-fetch('https://telegram-mini-app-b3ah.onrender.com/api/cars/brands')
-  .then(res => res.json())
-  .then(res => {
-    console.log(res);
-    const template = res.map(item => `
-      <option value="${item.name}">
-        ${item.name}
-      </option>  
-    `)
-
-    brandsSelect.innerHTML = template
-  })
-
-fetch('https://telegram-mini-app-b3ah.onrender.com/api/cars/models')
-  .then(res => res.json())
-  .then(res => {
-    console.log(res);
-    const template = res.map(item => `
-      <option value="${item.name}">
-        ${item.name}
-      </option>  
-    `)
-
-    modelsSelect.innerHTML = template
-  })
-  
-/* ================
-   Helpers
-   ================ */
+/* Helpers */
 const dayMs = 24 * 60 * 60 * 1000;
 const toLocalDate = (iso) => new Date(iso + "T00:00:00");
 const fmtRu = (d) => d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
 const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} ฿`;
-const daysInclusive = (a, b) => Math.max(1, Math.round((toLocalDate(b) - toLocalDate(a)) / dayMs) + 1);
-const declineDays = (n) => {
-  if (n % 10 === 1 && n % 100 !== 11) return "день";
-  if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return "дня";
-  return "дней";
-};
-const overlaps = (aStart, aEnd, bStart, bEnd) => (aStart <= bEnd) && (aEnd >= bStart);
+const overlaps = (aStart, aEnd, bStart, bEnd) => aStart < bEnd && aEnd > bStart;
+const nights = (startIso, endIso) => Math.max(1, Math.ceil((toLocalDate(endIso) - toLocalDate(startIso)) / dayMs));
+const declineDays = (n) => (n % 10 === 1 && n % 100 !== 11) ? "день" : ([2,3,4].includes(n%10) && ![12,13,14].includes(n%100) ? "дня" : "дней");
 
-/* ================
-   API
-   ================ */
-const API = "https://telegram-mini-app-b3ah.onrender.com/api/motorcycles";
-let bookingsController = null;
+/* API (moto) */
+const API = "https://rentareabackend.pythonanywhere.com/api/motorcycles";
 
+/* State */
+let allMotorcycles = [];
+let allCategories  = [];
+let allBookings    = [];
+let selectedCategory = null;
+let selectedStart = null;
+let selectedEnd   = null;
+let currentMoto   = null;
+
+/* Цена фильтр */
+let priceFrom = null;
+let priceTo   = null;
+
+/* Fetch */
 async function fetchCategories() {
   const r = await fetch(`${API}/categories/`);
   const data = await r.json();
   allCategories = data?.results || [];
 }
-
 async function fetchMotorcycles() {
   const r = await fetch(`${API}/motorcycles/`);
   const data = await r.json();
-  const city = localStorage.getItem('selectedCity')
-  if(city === 'Все'){
-    allMotorcycles = data?.results || [];
-  }else{
-    allMotorcycles = data?.results.filter(item => item.city.name === city) || [];
-  }
+  const city = localStorage.getItem("selectedCity");
+  const list = data?.results || [];
+  allMotorcycles = (!city || city === "Все") ? list : list.filter(m => m.city?.name === city);
 }
-
 async function fetchBookings() {
-  try {
-    if (bookingsController) bookingsController.abort();
-    bookingsController = new AbortController();
-    const r = await fetch(`${API}/bookings/`, { signal: bookingsController.signal });
-    const data = await r.json();
-    allBookings = (data?.results || []).filter((b) => BOOKING_STATUSES_BLOCK.has(b.status));
-  } catch (e) {
-    console.warn("Ошибка загрузки бронирований:", e);
-  }
+  const r = await fetch(`${API}/bookings/`);
+  const data = await r.json();
+  allBookings = (data?.results || []).filter(b => ["active","pending","confirmed"].includes(b.status));
 }
 
-/* ================
-   Init
-   ================ */
-(async function init() {
+/* Init */
+(async function init(){
   await Promise.all([fetchCategories(), fetchMotorcycles()]);
   renderCategories();
-  applyFilters();
+  // до выбора дат — подсказка
+  cardsContainer.innerHTML = `<p style="text-align:center;color:#99A2AD;margin-top:40px;">Пожалуйста, выберите даты аренды</p>`;
 })();
 
-/* ================
-   Categories
-   ================ */
+/* Категории */
 function renderCategories() {
   if (!allCategories.length) {
     categoriesContainer.innerHTML = "<p>Категории не найдены</p>";
     return;
   }
-
-  categoriesContainer.innerHTML = allCategories
-    .map(
-      (c) => `
-      <div class="category" data-category="${c.title}">
-        <img src="${c.icon}" alt="${c.title}">
-        <p>${c.title}</p>
-      </div>`
-    )
-    .join("");
+  categoriesContainer.innerHTML = allCategories.map(c => `
+    <div class="category" data-category="${c.title}">
+      <img src="${c.icon}" alt="${c.title}">
+      <p>${c.title}</p>
+    </div>
+  `).join("");
 
   const catElems = document.querySelectorAll(".category");
-  catElems.forEach((el) =>
-    el.addEventListener("click", () => {
-      catElems.forEach((c) => c.classList.remove("active"));
-      el.classList.add("active");
-      selectedCategory = el.getAttribute("data-category");
-      applyFilters();
-    })
-  );
-
-  if (catElems.length > 0) {
+  catElems.forEach(el => el.addEventListener("click", () => {
+    catElems.forEach(c => c.classList.remove("active"));
+    el.classList.add("active");
+    selectedCategory = el.dataset.category;
+    applyFilters();
+  }));
+  if (catElems.length) {
     catElems[0].classList.add("active");
-    selectedCategory = catElems[0].getAttribute("data-category");
+    selectedCategory = catElems[0].dataset.category;
   }
 }
 
-/* ================
-   Date filtering
-   ================ */
+/* Нажатие "Посмотреть" */
 showBtn?.addEventListener("click", async () => {
-  selectedStart = startInput?.value;
-  selectedEnd = endInput?.value;
+  selectedStart = startInput.value;
+  selectedEnd   = endInput.value;
   if (!selectedStart || !selectedEnd) return alert("Выберите обе даты");
 
   showBtn.disabled = true;
-  const oldText = showBtn.textContent;
+  const old = showBtn.textContent;
   showBtn.textContent = "Загрузка...";
-
   await fetchBookings();
   applyFilters();
-
   showBtn.disabled = false;
-  showBtn.textContent = oldText;
+  showBtn.textContent = old;
 });
 
-/* ================
-   Apply filters
-   ================ */
+/* Фильтрация и рендер */
 function applyFilters() {
-  let list = selectedCategory
-    ? allMotorcycles.filter((m) => m.category_title === selectedCategory)
-    : allMotorcycles.slice();
-
-  if (selectedStart && selectedEnd && allBookings.length) {
-    const s = toLocalDate(selectedStart);
-    const e = toLocalDate(selectedEnd);
-    list = list.map((m) => {
-      const motoBookings = allBookings.filter((b) => b.motorcycle === m.id);
-      const conflicts = motoBookings.filter((b) =>
-        overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
-      );
-      return { ...m, __hasConflict: conflicts.length > 0, __conflictRange: conflicts };
-    });
-  } else {
-    list = list.map((m) => ({ ...m, __hasConflict: false, __conflictRange: [] }));
+  if (!selectedStart || !selectedEnd) {
+    cardsContainer.innerHTML = `<p style="text-align:center;color:#99A2AD;margin-top:40px;">Пожалуйста, выберите даты аренды</p>`;
+    return;
   }
+
+  let list = allMotorcycles.slice();
+
+  // категория
+  if (selectedCategory) list = list.filter(m => m.category_title === selectedCategory);
+
+  // доступность
+  const s = toLocalDate(selectedStart);
+  const e = toLocalDate(selectedEnd);
+  list = list.map(m => {
+    const hasConflict = allBookings.some(b => b.motorcycle === m.id && overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date)));
+    return { ...m, __hasConflict: hasConflict };
+  });
+
+  // показываем только свободные
+  list = list.filter(m => !m.__hasConflict);
+
+  // фильтр цены
+  if (priceFrom != null && !Number.isNaN(priceFrom)) list = list.filter(m => Number(m.price_per_day) >= Number(priceFrom));
+  if (priceTo   != null && !Number.isNaN(priceTo))   list = list.filter(m => Number(m.price_per_day) <= Number(priceTo));
 
   renderMotorcycles(list);
 }
 
-/* ================
-   Render motorcycles
-   ================ */
 function renderMotorcycles(motos) {
   if (!motos.length) {
-    cardsContainer.innerHTML = "<p>Нет доступных мотоциклов</p>";
+    cardsContainer.innerHTML = "<p style='text-align:center;color:#99A2AD;margin-top:40px;'>Нет доступных мотоциклов на выбранные даты</p>";
     return;
   }
 
-  cardsContainer.innerHTML = motos
-    .map((m) => {
-      const booked = m.__hasConflict;
-      let bookedText = "";
-      if (booked && m.__conflictRange.length) {
-        const b = m.__conflictRange[0];
-        bookedText = `Занято: ${toLocalDate(b.start_date).toLocaleDateString("ru-RU")} — ${toLocalDate(b.end_date).toLocaleDateString("ru-RU")}`;
-      }
+  cardsContainer.innerHTML = motos.map(m => {
+    const images = (m.images?.length ? m.images : [{ image: "../../images/no_photo.png" }])
+      .map(img => `<img src="${img.image}" alt="${m.title}">`)
+      .join("");
+    return `
+      <div class="card">
+        <div class="card-slider">
+          <div class="slides">${images}</div>
+          ${m.images?.length > 1 ? `<button class="prev">‹</button><button class="next">›</button>` : ""}
+        </div>
 
-      return `
-      <div class="card ${booked ? "unavailable" : ""}">
-        <img src="${m.images?.[0]?.image || "../../images/no_photo.png"}" alt="${m.title}" class="photo_moto">
         <div class="info">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
             <h4>${m.title}</h4>
             <p>${m.year || "—"}, ${m.color || "—"}</p>
           </div>
 
-          <div>
-            <li><img src="../../images/car_parameters/motor.svg" alt="motor"> ${m.engine_volume || "—"}L</li>
-            <li><img src="../../images/car_parameters/settings.svg" alt="settings"> ${m.transmission || "—"}</li>
-            <li><img src="../../images/car_parameters/road.svg" alt="road"> ${m.mileage || "—"} km</li>
-            <li><img src="../../images/car_parameters/oil.svg" alt="oil"> ${m.oil_type || "—"}</li>
+          <div class="specs">
+            <li><img src="../../images/car_parameters/motor.svg"> ${m.engine_volume || "—"}L</li>
+            <li><img src="../../images/car_parameters/settings.svg"> ${m.transmission || "—"}</li>
+            <li><img src="../../images/car_parameters/road.svg"> ${m.mileage || "—"} км</li>
+            <li><img src="../../images/car_parameters/oil.svg"> ${m.oil_type || "—"}</li>
           </div>
 
-          <div class="goods">
-            ${(m.features || []).map((f) => `<li>${f.title}</li>`).join("") || "<li>Без предоплаты</li><li>Для путешествий</li>"}
-          </div>
+          ${(m.features?.length ? `<div class="goods">${m.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : "")}
 
           <div class="line"></div>
           <div class="price">
             <h4>${rub(m.price_per_day)}</h4>
-            <p>${rub(m.price_per_day)}/день<br>Депозит: ${rub(m.deposit)}</p>
+            <p>${rub(m.price_per_day)}/день<br>Депозит: ${rub(m.deposit || 0)}</p>
           </div>
 
-          ${booked ? `<p class="booked" style="color:red;">${bookedText}</p>` : ""}
-          <button class="openBooking" ${booked ? "disabled" : ""} data-id="${m.id}">
-            ${booked ? "Недоступно" : "Забронировать"}
-          </button>
+          <button class="openBooking" data-id="${m.id}">Забронировать</button>
         </div>
-      </div>`;
-    })
-    .join("");
+      </div>
+    `;
+  }).join("");
 
-  document.querySelectorAll(".openBooking:not([disabled])").forEach((btn) =>
+  initSliders();
+
+  document.querySelectorAll(".openBooking").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = Number(btn.dataset.id);
-      const moto = motos.find((m) => m.id === id);
-      if (moto) openBookingForMoto(moto);
-    })
-  );
+      const moto = motos.find(m => m.id === id);
+      if (moto) openBooking(moto);
+    });
+  });
 }
 
-/* ================
-   Booking modal
-   ================ */
-function openBookingForMoto(moto) {
+/* Слайдер */
+function initSliders() {
+  document.querySelectorAll(".card-slider").forEach(slider => {
+    const slides = slider.querySelector(".slides");
+    const imgs = slides.querySelectorAll("img");
+    let current = 0;
+
+    const prev = slider.querySelector(".prev");
+    const next = slider.querySelector(".next");
+
+    function show(i) {
+      if (i < 0) current = imgs.length - 1;
+      else if (i >= imgs.length) current = 0;
+      else current = i;
+      slides.style.transform = `translateX(-${current * 100}%)`;
+    }
+
+    next?.addEventListener("click", () => show(current + 1));
+    prev?.addEventListener("click", () => show(current - 1));
+
+    // свайп
+    let startX = 0;
+    slides.addEventListener("touchstart", e => (startX = e.touches[0].clientX));
+    slides.addEventListener("touchend", e => {
+      const diff = e.changedTouches[0].clientX - startX;
+      if (diff > 50) show(current - 1);
+      if (diff < -50) show(current + 1);
+    });
+  });
+}
+
+/* Открытие модалки */
+function openBooking(moto) {
   currentMoto = moto;
-  
-  resetModalDates(); // <— вот это добавь
-
-  const photo = bookingModal.querySelector(".photo_product");
-  const title = bookingModal.querySelector("h4");
-  const desc = bookingModal.querySelector(".description");
-  const range = bookingModal.querySelector(".row p");
-  const total = bookingModal.querySelector(".price");
-
-  if (photo) photo.src = moto.images?.[0]?.image || "../../images/no_photo.png";
-  if (title) title.textContent = moto.title;
-  if (desc) desc.textContent = moto.description || "";
-
-  if (selectedStart && selectedEnd) {
-    const n = daysInclusive(selectedStart, selectedEnd);
-    range.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
-    total.textContent = `${rub(moto.price_per_day * n)}`;
-  } else {
-    total.textContent = "—";
-  }
-
   bookingModal.style.display = "flex";
   document.body.style.overflow = "hidden";
+
+  modalPhoto.src = moto.images?.[0]?.image || "../../images/no_photo.png";
+  modalTitle.textContent = moto.title || "Мотоцикл";
+  modalDesc.textContent  = moto.description || "";
+
+  if (selectedStart && selectedEnd) {
+    const n = nights(selectedStart, selectedEnd);
+    modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
+    modalTotal.textContent = rub((Number(moto.price_per_day) || 0) * n);
+  } else {
+    modalRange.textContent = "Даты не выбраны";
+    modalTotal.textContent = "—";
+  }
+
   bookingForm?.reset?.();
 }
 
-/* ================
-   Close modals
-   ================ */
-function closeBooking() {
+/* Закрытие модалок */
+function closeBooking(){
   bookingModal.style.display = "none";
   document.body.style.overflow = "";
 }
 bookingClose?.addEventListener("click", closeBooking);
-bookingModal?.addEventListener("click", (e) => {
-  if (e.target.id === "bookingModal") closeBooking();
-});
+bookingModal?.addEventListener("click", (e) => { if (e.target === bookingModal) closeBooking(); });
 window.addEventListener("keydown", (e) => e.key === "Escape" && closeBooking());
+
 closeSuccess?.addEventListener("click", () => {
   successModal.style.display = "none";
   document.body.style.overflow = "";
 });
 
-/* ================
-   Booking submit
-   ================ */
+/* Отправка бронирования */
 bookingForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!currentMoto) return alert("Выберите мотоцикл");
@@ -345,13 +288,11 @@ bookingForm?.addEventListener("submit", async (e) => {
   const phone = bookingForm.querySelector("input[placeholder='Ваш номер телефона']")?.value.trim();
   const comment = bookingForm.querySelector("input[placeholder='Ваш комментарий']")?.value.trim();
 
-  if (!user?.id) return alert("Откройте Mini App в Telegram!");
-
   const payload = {
-    car: currentMoto.id,
+    motorcycle: currentMoto.id,                  // <-- фикс: motorcycle
     start_date: selectedStart,
     end_date: selectedEnd,
-    telegram_id: user.id,
+    telegram_id: user?.id || 102445,
     client_name: name,
     phone_number: phone,
     provider_terms_accepted: true,
@@ -360,7 +301,7 @@ bookingForm?.addEventListener("submit", async (e) => {
   };
 
   const btn = bookingForm.querySelector(".btn");
-  const prevText = btn.textContent;
+  const old = btn.textContent;
   btn.disabled = true;
   btn.textContent = "Отправка...";
 
@@ -370,10 +311,8 @@ bookingForm?.addEventListener("submit", async (e) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
     if (!res.ok) throw new Error(await res.text());
 
-    // Успешная отправка
     tg?.HapticFeedback?.notificationOccurred?.("success");
     bookingModal.style.display = "none";
     successModal.style.display = "flex";
@@ -381,125 +320,38 @@ bookingForm?.addEventListener("submit", async (e) => {
 
     await fetchBookings();
     applyFilters();
-
   } catch (err) {
     console.error(err);
     tg?.HapticFeedback?.notificationOccurred?.("error");
     alert("Ошибка при бронировании");
   } finally {
     btn.disabled = false;
-    btn.textContent = prevText;
+    btn.textContent = old;
   }
 });
 
-
-/* ==============================
-   Выбор дат внутри bookingModal
-   ============================== */
-const modalStartInput = document.getElementById("modal-start");
-const modalEndInput = document.getElementById("modal-end");
-const modalRange = bookingModal?.querySelector(".date-pick-result");
-
-function updateModalDates() {
-  const sVal = modalStartInput.value;
-  const eVal = modalEndInput.value;
-
-  if (sVal && eVal) {
-    const s = toLocalDate(sVal);
-    const e = toLocalDate(eVal);
-
-    if (e < s) {
-      modalRange.textContent = "Дата окончания раньше начала!";
-      modalRange.style.color = "red";
-      return;
-    }
-
-    const n = daysInclusive(sVal, eVal);
-    modalRange.style.color = "";
-    modalRange.textContent = `${fmtRu(s)} — ${fmtRu(e)} · ${n} ${declineDays(n)}`;
-
-    // обновляем глобальные переменные
-    selectedStart = sVal;
-    selectedEnd = eVal;
-
-    // обновляем цену
-    if (currentCar) {
-      const total = (currentCar.price_per_day || 0) * n;
-      const totalPrice = bookingModal.querySelector(".price");
-      if (totalPrice) totalPrice.textContent = rub(total);
-    }
-  } else {
-    modalRange.style.color = "";
-  }
-}
-
-modalStartInput?.addEventListener("change", updateModalDates);
-modalEndInput?.addEventListener("change", updateModalDates);
-
-// при открытии модалки — очистим поля
-function resetModalDates() {
-  modalStartInput.value = "";
-  modalEndInput.value = "";
-}
-
-closeSuccess?.addEventListener("click", () => {
-  successModal.style.display = "none";
-  document.body.style.overflow = "";
-});
-
-const filterBtn = document.querySelector(".filter");
-const filterModal = document.getElementById("filterModal");
-const filterClose = filterModal.querySelector(".close");
-const filterForm = document.getElementById("filterForm");
-
+/* Модалка фильтра */
 filterBtn?.addEventListener("click", () => {
   filterModal.style.display = "flex";
   document.body.style.overflow = "hidden";
 });
-
 filterClose?.addEventListener("click", () => {
   filterModal.style.display = "none";
   document.body.style.overflow = "";
 });
-
 filterModal?.addEventListener("click", (e) => {
-  if (e.target.id === "filterModal") {
+  if (e.target === filterModal) {
     filterModal.style.display = "none";
     document.body.style.overflow = "";
   }
 });
-
-// Обработка формы
 filterForm?.addEventListener("submit", (e) => {
   e.preventDefault();
-
-  const from = Number(document.getElementById("priceFrom").value);
-  const to = Number(document.getElementById("priceTo").value);
-
-  // Пример фильтрации уже загруженных машин
-  const filtered = allMotorcycles.filter(car => {
-    const matchPrice = (!from || car.price_per_day >= from) && (!to || car.price_per_day <= to);
-    return matchPrice;
-  });
-
-  renderMotorcycles(filtered);
+  priceFrom = Number(document.getElementById("priceFrom").value);
+  priceTo   = Number(document.getElementById("priceTo").value);
+  if (Number.isNaN(priceFrom)) priceFrom = null;
+  if (Number.isNaN(priceTo))   priceTo   = null;
   filterModal.style.display = "none";
   document.body.style.overflow = "";
+  applyFilters();
 });
-
-
-/* ================
-   Bottom nav
-   ================ */
-const navLinks = document.querySelectorAll("footer .bottom__bar li a");
-navLinks.forEach((link) =>
-  link.addEventListener("click", (e) => {
-    e.preventDefault();
-    navLinks.forEach((l) => l.classList.remove("active"));
-    link.classList.add("active");
-  })
-);
-
-const city = document.querySelector('.city')
-
-city.innerHTML = localStorage.getItem('selectedCity')

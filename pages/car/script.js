@@ -31,8 +31,7 @@ const modalTitle = bookingModal?.querySelector(".car-title");
 const modalDesc = bookingModal?.querySelector(".description");
 const modalRange = bookingModal?.querySelector(".date-pick-result");
 const modalPrice = bookingModal?.querySelector(".price");
-const modalStartInput = document.getElementById("modal-start");
-const modalEndInput = document.getElementById("modal-end");
+
 
 const sortSelect = document.getElementById("sortPrice");
 
@@ -55,7 +54,7 @@ const declineDays = (n) => {
 const overlaps = (aStart, aEnd, bStart, bEnd) => aStart < bEnd && aEnd > bStart;
 
 /* API */
-const API_BASE = "https://telegram-mini-app-b3ah.onrender.com/api";
+const API_BASE = "https://rentareabackend.pythonanywhere.com/api";
 const API = `${API_BASE}/cars`;
 
 let allCars = [];
@@ -187,7 +186,14 @@ filterForm?.addEventListener("submit", (e) => {
 });
 
 /* Filtering + render */
+/* Filtering + render */
 function applyFilters() {
+  // Если даты не выбраны — ничего не показываем
+  if (!selectedStart || !selectedEnd) {
+    cardsContainer.innerHTML = `<p style="text-align:center;color:#99A2AD;margin-top:40px;">Пожалуйста, выберите даты аренды</p>`;
+    return;
+  }
+
   let list = allCars.slice();
 
   // категория
@@ -199,7 +205,7 @@ function applyFilters() {
     list = list.filter((c) => c.city?.name === selectedCity);
   }
 
-  // значения полей формы (если есть)
+  // значения из фильтра
   const yearFrom = parseInt(document.getElementById("filterYear")?.value || "");
   const color = document.getElementById("filterColor")?.value || "";
   const transmission = document.getElementById("filterTransmission")?.value || "";
@@ -208,36 +214,31 @@ function applyFilters() {
   const brand = document.getElementById("filterBrand")?.value || "";
   const model = document.getElementById("filterModel")?.value || "";
 
-  // марка/модель (если есть в данных)
+  // фильтры
   if (brand) list = list.filter((c) => String(c.brand?.id) === String(brand));
   if (model) list = list.filter((c) => String(c.model?.id) === String(model));
-
-  // год
   if (!isNaN(yearFrom)) list = list.filter((c) => Number(c.year || 0) >= yearFrom);
-
-  // цвет
   if (color) list = list.filter((c) => (c.color || "").toLowerCase() === color.toLowerCase());
-
-  // коробка передач
   if (transmission) {
     const t = transmission.toLowerCase();
     list = list.filter((c) => (c.transmission || "").toLowerCase().includes(t));
   }
-
-  // цена
   if (!isNaN(priceFrom)) list = list.filter((c) => Number(c.price_per_day) >= priceFrom);
   if (!isNaN(priceTo)) list = list.filter((c) => Number(c.price_per_day) <= priceTo);
 
-  // занятость по датам
-  if (selectedStart && selectedEnd && allBookings.length) {
-    const s = toLocalDate(selectedStart);
-    const e = toLocalDate(selectedEnd);
-    list = list.map((car) => {
-      const conflicts = allBookings.some((b) => b.car === car.id &&
-        overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date)));
-      return { ...car, __hasConflict: conflicts };
-    });
-  }
+  // Проверка занятости по датам
+  const s = toLocalDate(selectedStart);
+  const e = toLocalDate(selectedEnd);
+  list = list.map((car) => {
+    const conflicts = allBookings.some((b) => 
+      b.car === car.id &&
+      overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
+    );
+    return { ...car, __hasConflict: conflicts };
+  });
+
+  // Показываем только свободные авто
+  list = list.filter((car) => !car.__hasConflict);
 
   // сортировка
   const sort = sortSelect?.value;
@@ -246,10 +247,12 @@ function applyFilters() {
 
   renderCars(list);
 }
+
+/* Рендер карточек */
 function renderCars(cars) {
   const container = document.querySelector(".cards");
   if (!cars.length) {
-    container.innerHTML = "<p>Нет доступных авто</p>";
+    container.innerHTML = "<p style='text-align:center;color:#99A2AD;margin-top:40px;'>Нет доступных автомобилей на выбранные даты</p>";
     return;
   }
 
@@ -257,18 +260,13 @@ function renderCars(cars) {
     .map((car) => {
       const images = car.images?.length
         ? car.images.map(img => `<img src="${img.image}" alt="${car.title}">`).join('')
-        : `<img src="../../images/no_photo.jpg" alt="no photo">`;
-
-      const booked = car.__hasConflict; // если занято
-      const bookedText = booked ? "Недоступно" : "Забронировать";
+        : `<img src='../../images/no_photo.jpg' alt='no photo'>`;
 
       return `
-      <div class="card ${booked ? "unavailable" : ""}">
+      <div class="card">
         <div class="card-slider">
           <div class="slides">${images}</div>
-          ${car.images?.length > 1
-            ? `<button class="prev">‹</button><button class="next">›</button>`
-            : ""}
+          ${car.images?.length > 1 ? `<button class="prev">‹</button><button class="next">›</button>` : ""}
         </div>
 
         <div class="info">
@@ -290,23 +288,19 @@ function renderCars(cars) {
             <p>${rub(car.price_per_day)}/день<br>Депозит: ${rub(car.deposit || 0)}</p>
           </div>
 
-          <button class="openBooking" data-id="${car.id}" ${booked ? "disabled" : ""}>
-            ${bookedText}
-          </button>
+          <button class="openBooking" data-id="${car.id}">Забронировать</button>
         </div>
       </div>`;
     })
     .join("");
 
-  // инициализируем слайдеры
   initCarSliders();
 
-  // добавляем обработчик клика на каждую кнопку бронирования
   document.querySelectorAll(".openBooking").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const id = e.target.dataset.id;
       const car = cars.find((c) => String(c.id) === String(id));
-      if (!car || btn.disabled) return;
+      if (!car) return;
       openBooking(car);
     });
   });
@@ -349,14 +343,25 @@ function openBooking(car) {
   currentCar = car;
   bookingModal.style.display = "flex";
   document.body.style.overflow = "hidden";
+
+  // наполняем данные
   modalPhoto.src = car.images?.[0]?.image || "../../images/no_photo.jpg";
   modalTitle.textContent = car.title;
   modalDesc.textContent = car.description || "";
-  modalRange.textContent = "Выберите даты";
-  modalPrice.textContent = "—";
-  modalStartInput.value = "";
-  modalEndInput.value = "";
+
+  // показываем выбранные пользователем даты
+  if (selectedStart && selectedEnd) {
+    const n = daysExclusiveNights(selectedStart, selectedEnd);
+    modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(
+      toLocalDate(selectedEnd)
+    )} · ${n} ${declineDays(n)}`;
+    modalPrice.textContent = rub((Number(car.price_per_day) || 0) * n);
+  } else {
+    modalRange.textContent = "Даты не выбраны";
+    modalPrice.textContent = "—";
+  }
 }
+
 
 bookingClose?.addEventListener("click", () => {
   bookingModal.style.display = "none";

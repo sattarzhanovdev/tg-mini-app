@@ -765,6 +765,20 @@ footer .bottom__bar li a.active img {
   font-family: 'SF Pro medium';
 }
 
+
+.date-info {
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+
+.date-info p {
+  margin: 6px 0;
+  font-size: 15px;
+  font-family: 'SF Pro medium';
+}
+
 .picker-city {
   flex: 1;
   border: 1px solid #E7E7E9;
