@@ -50,11 +50,16 @@ header .left p{
   margin-top: 6px;
 }
 
+header .left{
+  width: 100%;
+}
+
 header .left select{
   border: 1px solid #AEAEB2;
   background: none;
   border-radius: 6px;
-  width: 150px;
+  /* width: 150px; */
+  width: 100%;
   height: 30px;
   outline: none;
 }
