@@ -19,7 +19,7 @@ body{
 }
 
 .logo{
-  margin-top: 40px;
+  margin-top: 60px;
   margin-bottom: 40px;
   display: flex;
   justify-content: center;
@@ -52,6 +52,7 @@ header .left p{
 
 header .left select{
   border: 1px solid #AEAEB2;
+  background: none;
   border-radius: 6px;
   width: 150px;
   height: 30px;
