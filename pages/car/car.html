@@ -1,28 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cars</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Авто — Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./style.css" />
+    <style>
+      /* мини-стили для фильтра, если в твоём style.css нет */
+      .filter { display:flex; align-items:center; gap:8px; color:#99A2AD; padding:0 15px; cursor:pointer; user-select:none; }
+      .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter: blur(2px); z-index:1000; justify-content:center; align-items:flex-end; }
+      .modal-content { width:100%; max-height:90%; overflow:auto; background:#fff; border-radius:20px 20px 0 0; padding:20px; animation:slideUp .25s ease-out; }
+      .modal .close { font-size:24px; cursor:pointer; float:right; }
+      @keyframes slideUp { from { transform: translateY(100%);} to { transform: translateY(0);} }
+    </style>
   </head>
   <body>
     <div class="logo">
-      <img src="../../images/logo.svg" alt="logo">
+      <img src="../../images/logo.svg" alt="logo" />
     </div>
-    <!-- <header>
-      <div class="left">
-        <h4 id="user-name"></h4>
-        <p class="city"></p>
-      </div>
-      <img src="https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=612x612&w=0&k=20&c=dhV2p1JwmloBTOaGAtaA3AW1KSnjsdMt7-U_3EZElZ0=" alt="profile" id="photo-profile">
-    </header> -->
 
     <main>
       <h4 class="title">Автомобили</h4>
+
+      <div class="city-selector" style="padding:0 15px; margin-bottom:10px;">
+        <label>Город:</label>
+        <select class="picker-city"></select>
+      </div>
+
+      <div class="sorting" style="padding:0 15px; margin-bottom:10px;">
+        <label>Сортировка:</label>
+        <select id="sortPrice">
+          <option value="none">Без сортировки</option>
+          <option value="asc">По возрастанию цены</option>
+          <option value="desc">По убыванию цены</option>
+        </select>
+      </div>
+
+      <!-- КНОПКА ОТКРЫТИЯ ФИЛЬТРА -->
       <p class="filter">
-        <img src="../../images/sliders.svg" alt="sliders">
+        <img src="../../images/sliders.svg" alt="sliders" width="18" height="18"/>
         Настроить фильтр
       </p>
 
@@ -30,64 +50,45 @@
         <p>Дата аренды</p>
         <div class="date-box">
           <div class="date-section">
-            <img src="../../images/date.svg" alt="date">
+            <img src="../../images/date.svg" alt="date" />
             <label for="start-date">От:</label>
-            <input type="date" id="start-date" class="date-field">
+            <input type="date" id="start-date" class="date-field" />
           </div>
           <div class="date-section">
-            <img src="../../images/date.svg" alt="date">
+            <img src="../../images/date.svg" alt="date" />
             <label for="end-date">До:</label>
-            <input type="date" id="end-date" class="date-field">
+            <input type="date" id="end-date" class="date-field" />
           </div>
         </div>
         <button class="show">Посмотреть</button>
       </div>
 
-
       <div class="category-container">
         <div class="category-picker">
-          <p>
-            Выберите класс автомобиля
-          </p>
-          <div class="categories">
-            
-          </div>
+          <p>Выберите класс автомобиля</p>
+          <div class="categories"></div>
         </div>
       </div>
 
-      <!-- <p class="result">Найдено <span class="amount">7</span> машин в категории "<span class="category_type">Седан</span>"</p> -->
+      <div class="cards"></div>
 
-      <div class="cards">
-        
-      </div>
+      <!-- Модалка бронирования -->
       <div class="modal" id="bookingModal">
         <div class="modal-content">
           <span class="close">&times;</span>
           <h3>Детали заказа</h3>
 
           <div class="card">
-            <img src="../../images/car_img.png" alt="car" class="photo_product">
-            <h4>Lixiang L7 Ultra</h4>
-            <div>
-              <li>
-                <img src="../../images/car_parameters/motor.svg" alt="motor">
-                1.6L
-              </li>
-              <li>
-                <img src="../../images/car_parameters/settings.svg" alt="motor">
-                АКПП
-              </li>
-              <li>
-                <img src="../../images/car_parameters/road.svg" alt="motor">
-                700km
-              </li>
-              <li>
-                <img src="../../images/car_parameters/oil.svg" alt="motor">
-                Гибрид
-              </li>
-            </div>
-            <p class="description">Премиальный гибридный кроссовер (range-extender) мощностью 449 л.с., с запасом хода до 1100 км и расширенным набором комфорта и ассистентов.</p>
+            <img
+              src="../../images/car_img.png"
+              alt="car"
+              class="photo_product"
+            />
+            <h4 class="car-title">Название автомобиля</h4>
+            <p class="description"></p>
+
             <div class="line"></div>
+
             <div class="date-range-picker">
               <label>Дата аренды:</label>
               <div class="inputs">
@@ -95,91 +96,95 @@
                 <input type="date" id="modal-end" />
               </div>
             </div>
-            <p class="date-pick-result"></p>
+            <p class="date-pick-result">Выберите даты</p>
             <div class="row">
-              <h4>Итого: <span class="price">1200$</span></h4>
+              <h4>Итого: <span class="price">—</span></h4>
             </div>
           </div>
 
-          <form class="booking-form"  id="bookingForm" >
-            <!-- <label>Дата аренды</label>
-            <div class="input">
-              <img src="../../images/date.svg" alt="date">
-              <span class="date-time"></span>
-            </div> -->
-
+          <form class="booking-form" id="bookingForm">
             <label>Имя</label>
             <div class="input">
-              <img src="../../images/user.svg" alt="user">
-              <input type="text" placeholder="Ваше имя">
+              <img src="../../images/user.svg" alt="user" />
+              <input type="text" placeholder="Ваше имя" required />
             </div>
 
             <label>Номер телефона</label>
             <div class="input">
-              <img src="../../images/phone.svg" alt="phone">
-              <input type="tel" placeholder="Ваш номер телефона">
+              <img src="../../images/phone.svg" alt="phone" />
+              <input type="tel" placeholder="Ваш номер телефона" required />
             </div>
 
             <label>Комментарии</label>
             <div class="input">
-              <img src="../../images/comment.svg" alt="comment">
-              <input type="text" placeholder="Ваш комментарий">
+              <img src="../../images/comment.svg" alt="comment" />
+              <input type="text" placeholder="Ваш комментарий" />
             </div>
+
+            <label class="checkbox" style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+              <input type="checkbox" id="agreeRules" />
+              <span>Я согласен с правилами аренды</span>
+            </label>
 
             <button type="submit" class="btn">Забронировать</button>
           </form>
         </div>
       </div>
 
-      <!-- Модалка "Заявка принята" -->
+      <!-- Модалка успеха -->
       <div class="modal" id="successModal">
         <div class="success-content">
-          <img src="../../images/check.svg" alt="success" class="success-icon">
+          <img
+            src="../../images/check.svg"
+            alt="success"
+            class="success-icon"
+          />
           <h2>Заявка принята!</h2>
           <p class="info-text">Менеджер свяжется с вами в течение 15 минут</p>
           <button id="closeSuccess" class="btn">Закрыть</button>
         </div>
       </div>
 
+      <!-- Фильтр -->
       <div class="modal" id="filterModal">
         <div class="modal-content filter-modal">
           <span class="close">&times;</span>
           <h3>Фильтрация</h3>
-
           <form id="filterForm">
-            <label>Выберите марку</label>
-            <div class="input">
-              <img src="../../images/car_filter.svg" alt="car">
-              <select class="select_marka" id="filterBrand"></select>
-            </div>
+            <label>Марка</label>
+            <select id="filterBrand"></select>
 
-            <label>Выберите модель</label>
-            <div class="input">
-              <img src="../../images/car_filter.svg" alt="car">
-              <select class="select_model" id="filterModel"></select>
-            </div>
+            <label>Модель</label>
+            <select id="filterModel"></select>
 
-            <label>Выберите год</label>
-            <div class="input">
-              <img src="../../images/date.svg" alt="year">
-              <input type="number" id="filterYear" placeholder="Год" min="1900" max="2100">
-            </div>
+            <label>Год выпуска (от)</label>
+            <input type="number" id="filterYear" placeholder="Год от" />
 
-            <div class="price-filter">
-              <div>
+            <label>Цвет</label>
+            <select id="filterColor">
+              <option value="">Любой</option>
+              <option>Белый</option>
+              <option>Черный</option>
+              <option>Красный</option>
+              <option>Серебристый</option>
+              <option>Синий</option>
+            </select>
+
+            <label>Коробка передач</label>
+            <select id="filterTransmission">
+              <option value="">Любая</option>
+              <option>АКПП</option>
+              <option>МКПП</option>
+            </select>
+
+            <div class="price-filter" style="display:flex; gap:10px;">
+              <div style="flex:1;">
                 <label>Цена от</label>
-                <div class="input">
-                  <img src="../../images/dollar.svg" alt="price">
-                  <input type="number" id="priceFrom" placeholder="От">
-                </div>
+                <input type="number" id="priceFrom" placeholder="От" style="width: 90%;"/>
               </div>
-
-              <div>
+              <div style="flex:1;">
                 <label>Цена до</label>
-                <div class="input">
-                  <img src="../../images/dollar.svg" alt="price">
-                  <input type="number" id="priceTo" placeholder="До">
-                </div>
+                <input type="number" id="priceTo" placeholder="До" style="width: 90%;"/>
               </div>
             </div>
 
@@ -187,48 +192,37 @@
           </form>
         </div>
       </div>
-
     </main>
-    
+
     <footer>
       <ul class="bottom__bar">
         <li>
-          <a href="#" onclick="window.location.href = '../../index.html'">
-            <img src="../../images/nav/home.svg" alt="home">
-            Главное
+          <a href="../../index.html">
+            <img src="../../images/nav/home.svg" alt="home" /> Главное
           </a>
         </li>
         <li>
-          <a href="#" class="active" >
-            <img src="../../images/nav/car.svg" alt="car">
-            Авто
+          <a href="#" class="active">
+            <img src="../../images/nav/car.svg" alt="car" /> Авто
           </a>
         </li>
         <li>
-          <a href="#" onclick="window.location.href = '../house/house.html'">
-            <img src="../../images/nav/building.svg" alt="building">
-            Недвижимость
+          <a href="../house/house.html">
+            <img src="../../images/nav/building.svg" alt="building" /> Недвижимость
           </a>
         </li>
         <li>
-          <a href="#" onclick="window.location.href = '../moto/moto.html'">
-            <img src="../../images/nav/moto.svg" alt="moto">
-            Мото
+          <a href="../moto/moto.html">
+            <img src="../../images/nav/moto.svg" alt="moto" /> Мото
           </a>
         </li>
         <li>
-          <a href="#" onclick="window.location.href = '../tour/tour.html'"> 
-            <img src="../../images/nav/map.svg" alt="map">
-            Экскурсии
+          <a href="../tour/tour.html">
+            <img src="../../images/nav/map.svg" alt="map" /> Экскурсии
           </a>
         </li>
-        <!-- <li>
-          <a href="#">
-            <img src="../../images/nav/user.svg" alt="user">
-            Профиль
-          </a>
-        </li> -->
       </ul>
+    </footer>
 
     <script src="./script.js"></script>
   </body>

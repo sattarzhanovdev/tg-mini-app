@@ -749,3 +749,319 @@ footer .bottom__bar li a img {
 footer .bottom__bar li a.active img {
   filter: brightness(0) saturate(100%) invert(35%) sepia(98%) saturate(7460%) hue-rotate(205deg) brightness(100%) contrast(105%);
 }
+
+.city-selector {
+  padding: 0 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.city-selector label {
+  font-size: 14px;
+  color: #000;
+  font-family: 'SF Pro medium';
+}
+
+.picker-city {
+  flex: 1;
+  border: 1px solid #E7E7E9;
+  border-radius: 10px;
+  padding: 10px;
+  background: #FCFCFC;
+  font-size: 14px;
+  outline: none;
+}
+.sorting {
+  padding: 0 15px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sorting label {
+  font-size: 14px;
+  color: #000;
+  font-family: 'SF Pro medium';
+}
+
+#sortPrice, #sortDate {
+  border: 1px solid #E7E7E9;
+  border-radius: 10px;
+  background: #FCFCFC;
+  padding: 8px 12px;
+  font-family: 'SF Pro medium';
+  font-size: 14px;
+  outline: none;
+  color: #000;
+}
+
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #1B86FF;
+  cursor: pointer;
+}
+
+.checkbox span {
+  font-size: 13px;
+  color: #333;
+  font-family: 'SF Pro medium';
+}
+
+/* =========================
+   Улучшенный стиль фильтра
+   ========================= */
+#filterModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(5px);
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.filter-modal {
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 28px 22px;
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
+  max-height: 90%;
+  position: relative;
+}
+
+.filter-modal h3 {
+  text-align: center;
+  font-family: "SF Pro semibold";
+  font-size: 20px;
+  font-weight: 600;
+  color: #000;
+  margin: 10px 0 20px;
+}
+
+.filter-modal .close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  font-size: 26px;
+  color: #aaa;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.filter-modal .close:hover {
+  color: #000;
+}
+
+/* ===== Форма ===== */
+#filterForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#filterForm label {
+  font-size: 14px;
+  font-family: "SF Pro medium";
+  color: #333;
+  margin-bottom: 4px;
+}
+
+#filterForm input{
+  width: 92%;
+  padding: 10px 12px;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 1px solid #E3E3E3;
+  background: #F8F8F8;
+  outline: none;
+  transition: 0.2s;
+}
+
+#filterForm select{
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 1px solid #E3E3E3;
+  background: #F8F8F8;
+  outline: none;
+  transition: 0.2s;
+}
+
+#filterForm select:focus,
+#filterForm input[type="number"]:focus {
+  border-color: #1B86FF;
+  background: #fff;
+}
+
+/* ==== Цена от / до ==== */
+.price-filter {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.price-filter div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.price-filter input {
+  -moz-appearance: textfield;
+  text-align: center;
+}
+
+.price-filter input::-webkit-inner-spin-button,
+.price-filter input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ==== Кнопка ==== */
+#filterForm .btn {
+  margin-top: 10px;
+  width: 100%;
+  background: #1B86FF;
+  border: none;
+  border-radius: 14px;
+  color: white;
+  padding: 13px 0;
+  font-size: 16px;
+  font-family: "SF Pro semibold";
+  cursor: pointer;
+  transition: 0.25s ease;
+  box-shadow: 0 3px 10px rgba(27, 134, 255, 0.35);
+}
+#filterForm .btn:hover {
+  background: #006fe6;
+}
+#filterForm .btn:active {
+  transform: scale(0.97);
+}
+
+/* ==== Анимация ==== */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ==== Адаптив ==== */
+@media (max-width: 430px) {
+  .filter-modal {
+    padding: 22px 18px;
+  }
+  #filterForm select,
+  #filterForm input {
+    font-size: 14px;
+  }
+  #filterForm label {
+    font-size: 13px;
+  }
+}
+
+.card-slider {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.card-slider .slides {
+  display: flex;
+  transition: transform 0.3s ease;
+}
+
+.card-slider img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.card-slider button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s;
+}
+
+.card-slider button:hover {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.card-slider .prev { left: 10px; }
+.card-slider .next { right: 10px; }
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.card.unavailable {
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+}
+
+.card.unavailable::after {
+  content: "Недоступно";
+  position: absolute;
+  top: 40%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'SF Pro semibold';
+  font-size: 18px;
+  color: #ff4444;
+}
+@media (max-width: 400px) {
+  .cards .card {
+    width: 90%;
+  }
+
+  .category-picker .categories .category {
+    width: 48%;
+  }
+
+  .city-selector, .sorting {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

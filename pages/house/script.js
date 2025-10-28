@@ -389,6 +389,8 @@ bookingForm?.addEventListener("submit", async (e) => {
     telegram_id: user.id,
     client_name: name,
     phone_number: phone,
+    provider_terms_accepted: true,
+    service_terms_accepted: true,
     comment,
   };
 
