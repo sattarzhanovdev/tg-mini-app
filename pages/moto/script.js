@@ -323,14 +323,19 @@ function renderMotorcycles(motos) {
           <div class="line"></div>
           <div class="price">
             ${(() => {
-              let price = Number(m.price_per_day);
+              let pricePerDay = Number(car.price_per_day);
+              let total = pricePerDay;
+              let days = 1;
+
               if (selectedStart && selectedEnd) {
-                const days = daysInclusive(selectedStart, selectedEnd);
-                price = getDynamicPrice(m, days);
+                days = daysExclusiveNights(selectedStart, selectedEnd);
+                pricePerDay = getDynamicPrice(car, days);
+                total = pricePerDay * days;
               }
+
               return `
-                <h4>${rub(price)}</h4>
-                <p>${rub(price)}/день<br>Депозит: ${rub(m.deposit || 0)}</p>
+                <h4>${rub(total)}</h4>
+                <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(car.deposit || 0)}</p>
               `;
             })()}
           </div>

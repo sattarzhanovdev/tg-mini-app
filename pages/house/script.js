@@ -256,14 +256,19 @@ function renderHouses(houses) {
           <div class="line"></div>
           <div class="price">
             ${(() => {
-              let price = Number(h.price_per_day);
+              let pricePerDay = Number(car.price_per_day);
+              let total = pricePerDay;
+              let days = 1;
+
               if (selectedStart && selectedEnd) {
-                const days = nights(selectedStart, selectedEnd);
-                price = getDynamicPrice(h, days);
+                days = daysExclusiveNights(selectedStart, selectedEnd);
+                pricePerDay = getDynamicPrice(car, days);
+                total = pricePerDay * days;
               }
+
               return `
-                <h4>${rub(price)}</h4>
-                <p>${rub(price)}/день<br>Депозит: ${rub(h.deposit || 0)}</p>
+                <h4>${rub(total)}</h4>
+                <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(car.deposit || 0)}</p>
               `;
             })()}
           </div>
