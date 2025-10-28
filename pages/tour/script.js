@@ -176,8 +176,17 @@ function renderTours(tours) {
 
           <div class="line"></div>
           <div class="price">
-            <h4>${rub(t.price_per_person)}</h4>
-            <p>за человека</p>
+            ${(() => {
+              let price = Number(t.price_per_person);
+              if (selectedStart && selectedEnd) {
+                const days = nights(selectedStart, selectedEnd);
+                price = getDynamicTourPrice(t, days);
+              }
+              return `
+                <h4>${rub(price)}</h4>
+                <p>за человека</p>
+              `;
+            })()}
           </div>
 
           <button class="openBooking" data-id="${t.id}">Забронировать</button>
@@ -208,7 +217,8 @@ function openBooking(tour) {
   if (selectedStart && selectedEnd) {
     const n = nights(selectedStart, selectedEnd);
     modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
-    modalTotal.textContent = rub(Number(tour.price_per_person) || 0);
+    const pricePerPerson = getDynamicTourPrice(tour, n);
+    modalTotal.textContent = rub(pricePerPerson);
   } else {
     modalRange.textContent = "Даты не выбраны";
     modalTotal.textContent = "—";
@@ -242,7 +252,7 @@ bookingForm?.addEventListener("submit", async (e) => {
   const comment = bookingForm.querySelector("input[placeholder='Ваш комментарий']")?.value.trim();
 
   const payload = {
-    tour: currentTour.id,
+    excursion: currentTour.id,
     start_date: selectedStart,
     end_date: selectedEnd,
     telegram_id: user?.id || 102445,
@@ -308,3 +318,21 @@ filterForm?.addEventListener("submit", (e) => {
   document.body.style.overflow = "";
   applyFilters();
 });
+
+
+/* === Расчёт динамической цены в зависимости от количества дней === */
+function getDynamicTourPrice(tour, days) {
+  if (!tour.price_tiers || !tour.price_tiers.length) {
+    return Number(tour.price_per_person) || 0;
+  }
+
+  // ищем диапазон, подходящий по количеству дней
+  const tier = tour.price_tiers.find(t => {
+    const min = Number(t.min_days) || 0;
+    const max = t.max_days ? Number(t.max_days) : Infinity;
+    return days >= min && days <= max;
+  });
+
+  // если нашли диапазон — возвращаем цену из него
+  return tier ? Number(tier.price_per_person) : Number(tour.price_per_person);
+}

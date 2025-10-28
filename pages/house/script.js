@@ -27,7 +27,7 @@ const modalDesc = bookingModal?.querySelector(".description");
 const modalRange = bookingModal?.querySelector(".date-pick-result");
 const modalTotal = bookingModal?.querySelector(".price");
 
-/* Фильтр (цена) */
+/* Фильтр */
 const filterBtn = document.querySelector(".filter");
 const filterModal = document.getElementById("filterModal");
 const filterClose = filterModal?.querySelector(".close");
@@ -45,7 +45,9 @@ const nights = (startIso, endIso) => {
   const diff = Math.ceil((e - s) / dayMs);
   return Math.max(1, diff);
 };
-const declineDays = (n) => (n % 10 === 1 && n % 100 !== 11) ? "день" : ([2,3,4].includes(n%10) && ![12,13,14].includes(n%100) ? "дня" : "дней");
+const declineDays = (n) =>
+  n % 10 === 1 && n % 100 !== 11 ? "день" :
+  [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "дня" : "дней";
 
 /* API */
 const API = "https://rentareabackend.pythonanywhere.com/api/houses";
@@ -59,7 +61,7 @@ let selectedStart = null;
 let selectedEnd = null;
 let currentHouse = null;
 
-/* Цена фильтр state */
+/* Фильтры */
 let priceFrom = null;
 let priceTo = null;
 
@@ -79,16 +81,20 @@ async function fetchHouses() {
 async function fetchBookings() {
   const r = await fetch(`${API}/bookings/`);
   const data = await r.json();
-  // блокируем активные/ожидающие/подтвержденные
-  allBookings = (data?.results || []).filter(b => ["active","pending","confirmed"].includes(b.status));
+  allBookings = (data?.results || []).filter(b =>
+    ["active", "pending", "confirmed"].includes(b.status)
+  );
 }
 
 /* Init */
 (async function init() {
   await Promise.all([fetchCategories(), fetchHouses()]);
   renderCategories();
-  // до выбора дат ничего не показываем
-  cardsContainer.innerHTML = `<p style="text-align:center;color:#99A2AD;margin-top:40px;">Пожалуйста, выберите даты аренды</p>`;
+  loadDistricts();
+  cardsContainer.innerHTML =
+    `<p style="text-align:center;color:#99A2AD;margin-top:40px;">
+      Пожалуйста, выберите даты аренды
+    </p>`;
 })();
 
 /* Категории */
@@ -99,17 +105,20 @@ function renderCategories() {
     return;
   }
 
-  categoriesContainer.innerHTML = allCategories.map(c => `
+  categoriesContainer.innerHTML = allCategories
+    .map(
+      (c) => `
     <div class="category" data-category="${c.title}">
       <img src="${c.icon}" alt="${c.title}">
       <p>${c.title}</p>
-    </div>
-  `).join("");
+    </div>`
+    )
+    .join("");
 
   const catElems = document.querySelectorAll(".category");
-  catElems.forEach(el =>
+  catElems.forEach((el) =>
     el.addEventListener("click", () => {
-      catElems.forEach(c => c.classList.remove("active"));
+      catElems.forEach((c) => c.classList.remove("active"));
       el.classList.add("active");
       selectedCategory = el.dataset.category;
       applyFilters();
@@ -141,45 +150,91 @@ showBtn?.addEventListener("click", async () => {
   showBtn.textContent = oldText;
 });
 
-/* Фильтрация и рендер */
+/* === Основная фильтрация === */
 function applyFilters() {
-  // если даты не выбраны — не показываем список
+  // Проверяем, выбраны ли даты
   if (!selectedStart || !selectedEnd) {
-    cardsContainer.innerHTML = `<p style="text-align:center;color:#99A2AD;margin-top:40px;">Пожалуйста, выберите даты аренды</p>`;
+    cardsContainer.innerHTML = `
+      <p style="text-align:center;color:#99A2AD;margin-top:40px;">
+        Пожалуйста, выберите даты аренды
+      </p>`;
     return;
   }
 
   let list = allHouses.slice();
 
-  // категория
-  if (selectedCategory) list = list.filter(h => h.category_title === selectedCategory);
+  // Берём значения фильтров
+  const bedrooms = document.getElementById("filterBedrooms")?.value || "";
+  const district = document.getElementById("filterDistrict")?.value || "";
 
-  // доступность
+  // --- Фильтры (только если пользователь выбрал) ---
+  if (bedrooms) {
+    if (bedrooms === "5") list = list.filter(h => Number(h.bedrooms) >= 5);
+    else list = list.filter(h => Number(h.bedrooms) === Number(bedrooms));
+  }
+
+  if (district) {
+    list = list.filter(
+      h => (h.district || "").trim().toLowerCase() === district.trim().toLowerCase()
+    );
+  }
+
+  if (selectedCategory) {
+    list = list.filter(
+      h => h.category_title.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
+    );
+  }
+  // Фильтрация по цене — только если поля действительно заполнены
+  const priceFromValue = document.getElementById("priceFrom")?.value.trim();
+  const priceToValue = document.getElementById("priceTo")?.value.trim();
+
+  if (priceFromValue !== "" && !isNaN(priceFromValue)) {
+    const min = Number(priceFromValue);
+    list = list.filter(h => Number(h.price_per_day) >= min);
+  }
+
+  if (priceToValue !== "" && !isNaN(priceToValue)) {
+    const max = Number(priceToValue);
+    list = list.filter(h => Number(h.price_per_day) <= max);
+  }
+
+  // --- Проверяем занятость по датам ---
   const s = toLocalDate(selectedStart);
   const e = toLocalDate(selectedEnd);
   list = list.map(h => {
-    const conflicts = allBookings.some(b => b.house === h.id && overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date)));
+    const conflicts = allBookings.some(
+      b =>
+        b.house === h.id &&
+        overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
+    );
     return { ...h, __hasConflict: conflicts };
   });
-
-  // показываем только свободные
   list = list.filter(h => !h.__hasConflict);
 
-  // фильтр цены
-  if (priceFrom != null && !Number.isNaN(priceFrom)) list = list.filter(h => Number(h.price_per_day) >= Number(priceFrom));
-  if (priceTo != null && !Number.isNaN(priceTo)) list = list.filter(h => Number(h.price_per_day) <= Number(priceTo));
+  // --- Рендер ---
+  if (!list.length) {
+    cardsContainer.innerHTML = `
+      <p style="text-align:center;color:#99A2AD;margin-top:40px;">
+        Нет доступных объектов на выбранные даты
+      </p>`;
+    return;
+  }
 
+  console.log("Осталось:", list.length);
   renderHouses(list);
 }
 
+
+
+/* === Рендер карточек === */
 function renderHouses(houses) {
   if (!houses.length) {
-    cardsContainer.innerHTML = "<p style='text-align:center;color:#99A2AD;margin-top:40px;'>Нет доступных объектов на выбранные даты</p>";
+    cardsContainer.innerHTML =
+      "<p style='text-align:center;color:#99A2AD;margin-top:40px;'>Нет доступных объектов на выбранные даты</p>";
     return;
   }
 
   cardsContainer.innerHTML = houses.map(h => {
-    // слайдер картинок
     const images = (h.images?.length ? h.images : [{ image: "../../images/no_photo.png" }])
       .map(img => `<img src="${img.image}" alt="${h.title}">`)
       .join("");
@@ -194,29 +249,31 @@ function renderHouses(houses) {
         <div class="info">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <h4>${h.title}</h4>
-            <p>
-              ${h.area ?? "—"} кв/м <br>
-              ${h.bedrooms ?? "-"} спален
-            </p>
+            <p>${h.area ?? "—"} кв/м<br>${h.bedrooms ?? "-"} спален</p>
           </div>
-
+          ${h.district ? `<p style="font-size:14px;color:#6e6e6e;">Район: ${h.district?.name || h.district}</p>` : ""}
           ${(h.features?.length ? `<div class="goods">${h.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : "")}
-
           <div class="line"></div>
           <div class="price">
-            <h4>${rub(h.price_per_day)}</h4>
-            <p>${rub(h.price_per_day)}/день<br>Депозит: ${rub(h.deposit || 0)}</p>
+            ${(() => {
+              let price = Number(h.price_per_day);
+              if (selectedStart && selectedEnd) {
+                const days = nights(selectedStart, selectedEnd);
+                price = getDynamicPrice(h, days);
+              }
+              return `
+                <h4>${rub(price)}</h4>
+                <p>${rub(price)}/день<br>Депозит: ${rub(h.deposit || 0)}</p>
+              `;
+            })()}
           </div>
-
           <button class="openBooking" data-id="${h.id}">Забронировать</button>
         </div>
-      </div>
-    `;
+      </div>`;
   }).join("");
 
   initSliders();
 
-  // кнопки "Забронировать"
   document.querySelectorAll(".openBooking").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = Number(btn.dataset.id);
@@ -226,7 +283,7 @@ function renderHouses(houses) {
   });
 }
 
-/* Слайдер картинок */
+/* === Слайдер === */
 function initSliders() {
   document.querySelectorAll(".card-slider").forEach(slider => {
     const slides = slider.querySelector(".slides");
@@ -246,7 +303,6 @@ function initSliders() {
     next?.addEventListener("click", () => show(current + 1));
     prev?.addEventListener("click", () => show(current - 1));
 
-    // свайп
     let startX = 0;
     slides.addEventListener("touchstart", e => (startX = e.touches[0].clientX));
     slides.addEventListener("touchend", e => {
@@ -257,7 +313,7 @@ function initSliders() {
   });
 }
 
-/* Открытие модалки бронирования */
+/* === Модалки === */
 function openBooking(house) {
   currentHouse = house;
   bookingModal.style.display = "flex";
@@ -267,12 +323,11 @@ function openBooking(house) {
   modalTitle.textContent = house.title || "Объект";
   modalDesc.textContent = house.description || (house.area ? `${house.area} кв/м` : "");
 
-  // отображаем выбранные даты и итог
   if (selectedStart && selectedEnd) {
     const n = nights(selectedStart, selectedEnd);
     modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
-    modalTotal.textContent = rub((Number(house.price_per_day) || 0) * n);
-  } else {
+    const pricePerDay = getDynamicPrice(house, n);
+    modalTotal.textContent = rub(pricePerDay * n);  } else {
     modalRange.textContent = "Даты не выбраны";
     modalTotal.textContent = "—";
   }
@@ -280,7 +335,6 @@ function openBooking(house) {
   bookingForm?.reset?.();
 }
 
-/* Закрытие модалки */
 function closeBooking() {
   bookingModal.style.display = "none";
   document.body.style.overflow = "";
@@ -291,7 +345,7 @@ bookingModal?.addEventListener("click", (e) => {
 });
 window.addEventListener("keydown", (e) => e.key === "Escape" && closeBooking());
 
-/* Отправка бронирования */
+/* === Отправка брони === */
 bookingForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!currentHouse) return alert("Выберите дом");
@@ -325,13 +379,10 @@ bookingForm?.addEventListener("submit", async (e) => {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(await res.text());
-
     tg?.HapticFeedback?.notificationOccurred?.("success");
     bookingModal.style.display = "none";
     successModal.style.display = "flex";
     document.body.style.overflow = "hidden";
-
-    // Обновим занятость
     await fetchBookings();
     applyFilters();
   } catch (err) {
@@ -349,7 +400,7 @@ closeSuccess?.addEventListener("click", () => {
   document.body.style.overflow = "";
 });
 
-/* Модалка фильтра */
+/* === Фильтр-модалка === */
 filterBtn?.addEventListener("click", () => {
   filterModal.style.display = "flex";
   document.body.style.overflow = "hidden";
@@ -374,3 +425,30 @@ filterForm?.addEventListener("submit", (e) => {
   document.body.style.overflow = "";
   applyFilters();
 });
+
+/* === Заполнение районов === */
+function loadDistricts() {
+  const select = document.getElementById("filterDistrict");
+  if (!select) return;
+  const allDistricts = [...new Set(allHouses.map(h => h.district).filter(Boolean))];
+  select.innerHTML =
+    '<option value="">Любой</option>' +
+    allDistricts.map(d => `<option value="${d}">${d}</option>`).join("");
+  console.log("Доступные районы:", allDistricts);
+}
+
+function getDynamicPrice(house, days) {
+  if (!house.price_tiers || !house.price_tiers.length) {
+    return Number(house.price_per_day) || 0;
+  }
+
+  // ищем подходящий диапазон по дням
+  const tier = house.price_tiers.find(t => {
+    const min = Number(t.min_days) || 0;
+    const max = Number(t.max_days) || Infinity;
+    return days >= min && days <= max;
+  });
+
+  // если найден — возвращаем цену по этому диапазону
+  return tier ? Number(tier.price_per_day) : Number(house.price_per_day);
+}

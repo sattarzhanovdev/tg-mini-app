@@ -187,10 +187,14 @@ filterForm?.addEventListener("submit", (e) => {
 
 /* Filtering + render */
 /* Filtering + render */
+
 function applyFilters() {
-  // Если даты не выбраны — ничего не показываем
+  // если даты не выбраны — показываем сообщение и ничего не рендерим
   if (!selectedStart || !selectedEnd) {
-    cardsContainer.innerHTML = `<p style="text-align:center;color:#99A2AD;margin-top:40px;">Пожалуйста, выберите даты аренды</p>`;
+    cardsContainer.innerHTML = `
+      <p style="text-align:center;color:#99A2AD;margin-top:40px;">
+        Пожалуйста, выберите даты аренды
+      </p>`;
     return;
   }
 
@@ -201,7 +205,7 @@ function applyFilters() {
 
   // город
   const selectedCity = localStorage.getItem("selectedCity");
-  if (selectedCity && selectedCity !== "all") {
+  if (selectedCity && selectedCity !== "Все") {
     list = list.filter((c) => c.city?.name === selectedCity);
   }
 
@@ -215,8 +219,8 @@ function applyFilters() {
   const model = document.getElementById("filterModel")?.value || "";
 
   // фильтры
-  if (brand) list = list.filter((c) => String(c.brand?.id) === String(brand));
-  if (model) list = list.filter((c) => String(c.model?.id) === String(model));
+  if (brand) list = list.filter((c) => Number(c.brand) === Number(brand));
+  if (model) list = list.filter((c) => Number(c.model) === Number(model));
   if (!isNaN(yearFrom)) list = list.filter((c) => Number(c.year || 0) >= yearFrom);
   if (color) list = list.filter((c) => (c.color || "").toLowerCase() === color.toLowerCase());
   if (transmission) {
@@ -226,18 +230,17 @@ function applyFilters() {
   if (!isNaN(priceFrom)) list = list.filter((c) => Number(c.price_per_day) >= priceFrom);
   if (!isNaN(priceTo)) list = list.filter((c) => Number(c.price_per_day) <= priceTo);
 
-  // Проверка занятости по датам
+  // фильтр по бронированиям (так как даты уже точно выбраны)
   const s = toLocalDate(selectedStart);
   const e = toLocalDate(selectedEnd);
   list = list.map((car) => {
-    const conflicts = allBookings.some((b) => 
-      b.car === car.id &&
-      overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
+    const conflicts = allBookings.some(
+      (b) =>
+        b.car === car.id &&
+        overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
     );
     return { ...car, __hasConflict: conflicts };
   });
-
-  // Показываем только свободные авто
   list = list.filter((car) => !car.__hasConflict);
 
   // сортировка
@@ -245,8 +248,20 @@ function applyFilters() {
   if (sort === "asc") list.sort((a, b) => Number(a.price_per_day) - Number(b.price_per_day));
   if (sort === "desc") list.sort((a, b) => Number(b.price_per_day) - Number(a.price_per_day));
 
+  // если фильтры выбраны, но ничего не найдено
+  if (!list.length) {
+    cardsContainer.innerHTML = `
+      <p style="text-align:center;color:#99A2AD;margin-top:40px;">
+        Нет доступных автомобилей на выбранные даты
+      </p>`;
+    return;
+  }
+
   renderCars(list);
 }
+
+
+
 
 /* Рендер карточек */
 function renderCars(cars) {
@@ -284,8 +299,17 @@ function renderCars(cars) {
 
           <div class="line"></div>
           <div class="price">
-            <h4>${rub(car.price_per_day)}</h4>
-            <p>${rub(car.price_per_day)}/день<br>Депозит: ${rub(car.deposit || 0)}</p>
+            ${(() => {
+              let price = Number(car.price_per_day);
+              if (selectedStart && selectedEnd) {
+                const days = daysExclusiveNights(selectedStart, selectedEnd);
+                price = getDynamicPrice(car, days);
+              }
+              return `
+                <h4>${rub(price)}</h4>
+                <p>${rub(price)}/день<br>Депозит: ${rub(car.deposit || 0)}</p>
+              `;
+            })()}
           </div>
 
           <button class="openBooking" data-id="${car.id}">Забронировать</button>
@@ -355,7 +379,8 @@ function openBooking(car) {
     modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(
       toLocalDate(selectedEnd)
     )} · ${n} ${declineDays(n)}`;
-    modalPrice.textContent = rub((Number(car.price_per_day) || 0) * n);
+    const pricePerDay = getDynamicPrice(car, n);
+    modalPrice.textContent = rub(pricePerDay * n);
   } else {
     modalRange.textContent = "Даты не выбраны";
     modalPrice.textContent = "—";
@@ -388,7 +413,8 @@ function updateModalDates() {
     modalRange.textContent = `${fmtRu(toLocalDate(sVal))} — ${fmtRu(
       toLocalDate(eVal)
     )} · ${n} ${declineDays(n)}`;
-    modalPrice.textContent = rub((Number(currentCar.price_per_day) || 0) * n);
+    const pricePerDay = getDynamicPrice(currentCar, n);
+    modalPrice.textContent = rub(pricePerDay * n);
     selectedStart = sVal;
     selectedEnd = eVal;
   } else {
@@ -414,7 +440,7 @@ bookingForm?.addEventListener("submit", async (e) => {
     end_date: selectedEnd,
     telegram_id: user?.id || 102445,
     client_name: name,
-    client_phone: phone,
+    phone_number: phone,
     city: currentCar?.city?.id ?? undefined,
     provider_terms_accepted: true,
     service_terms_accepted: true,
@@ -460,7 +486,7 @@ async function loadFilterData() {
     const brands = Array.isArray(brandsJson) ? brandsJson : (brandsJson?.results || []);
     const brandSelect = document.getElementById("filterBrand");
     brandSelect.innerHTML = '<option value="">Любая</option>' +
-      brands.map(b => `<option value="${b.id}">${b.name}</option>`).join("");
+    brands.map(b => `<option value="${b.id}">${b.name}</option>`).join("");
 
     // MODELS
     const modelsRes = await fetch(`${API_CARS}/models`);
@@ -479,7 +505,7 @@ async function loadFilterData() {
       const brandId = Number(e.target.value);
       if (!brandId) return renderModels(allModels);
       const filtered = allModels.filter(m => {
-        const id = (m.brand?.id ?? m.brand_id ?? m.brand);
+        const id = m.brand;
         return Number(id) === brandId;
       });
       renderModels(filtered);
@@ -488,9 +514,34 @@ async function loadFilterData() {
     console.error("Ошибка загрузки фильтра:", err);
   }
 }
-/* === Открытие фильтра === */
+
+
+let filterDataLoaded = false;
+
 filterBtn?.addEventListener("click", async () => {
   filterModal.style.display = "flex";
   document.body.style.overflow = "hidden";
-  await loadFilterData();
+  if (!filterDataLoaded) {
+    await loadFilterData();
+    filterDataLoaded = true;
+  }
 });
+
+
+
+/* === Расчёт динамической цены в зависимости от количества дней === */
+function getDynamicPrice(car, days) {
+  if (!car.price_tiers || !car.price_tiers.length) {
+    return Number(car.price_per_day) || 0;
+  }
+
+  // ищем подходящий диапазон по количеству дней
+  const tier = car.price_tiers.find(t => {
+    const min = Number(t.min_days) || 0;
+    const max = t.max_days ? Number(t.max_days) : Infinity;
+    return days >= min && days <= max;
+  });
+
+  // если нашли подходящий диапазон — возвращаем его цену
+  return tier ? Number(tier.price_per_day) : Number(car.price_per_day);
+}

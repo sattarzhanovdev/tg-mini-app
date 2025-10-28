@@ -95,12 +95,12 @@
       </div>
 
       <!-- Модалка "Заявка принята" -->
-      <div class="modal" id="successModal">
-        <div class="success-content">
+      <div id="successModal" class="success-modal">
+        <div class="success-box">
           <img src="../../images/check.svg" alt="success" class="success-icon">
-          <h2>Заявка принята!</h2>
-          <p class="info-text">Менеджер свяжется с вами в течение 15 минут</p>
-          <button id="closeSuccess" class="btn">Закрыть</button>
+          <h2>Ваша заявка принята!</h2>
+          <p>В течении 15 минут с вами свяжутся наши менеджеры)</p>
+          <button id="closeSuccess" class="btn-ok">Ок</button>
         </div>
       </div>
 
@@ -112,6 +112,26 @@
 
           <form id="filterForm">
             <div class="price-filter">
+              <div class="filter-row">
+                <div>
+                  <label>Количество спален</label>
+                  <select id="filterBedrooms">
+                    <option value="">Любое</option>
+                    <option value="1">1 спальня</option>
+                    <option value="2">2 спальни</option>
+                    <option value="3">3 спальни</option>
+                    <option value="4">4 спальни</option>
+                    <option value="5">5+</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label>Район</label>
+                  <select id="filterDistrict">
+                    <option value="">Любой</option>
+                  </select>
+                </div>
+              </div>
               <div>
                 <label>Цена от</label>
                 <input type="number" id="priceFrom" placeholder="От">

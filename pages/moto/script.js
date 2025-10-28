@@ -322,8 +322,17 @@ function renderMotorcycles(motos) {
 
           <div class="line"></div>
           <div class="price">
-            <h4>${rub(m.price_per_day)}</h4>
-            <p>${rub(m.price_per_day)}/день<br>Депозит: ${rub(m.deposit || 0)}</p>
+            ${(() => {
+              let price = Number(m.price_per_day);
+              if (selectedStart && selectedEnd) {
+                const days = daysInclusive(selectedStart, selectedEnd);
+                price = getDynamicPrice(m, days);
+              }
+              return `
+                <h4>${rub(price)}</h4>
+                <p>${rub(price)}/день<br>Депозит: ${rub(m.deposit || 0)}</p>
+              `;
+            })()}
           </div>
 
           <button class="openBooking" data-id="${m.id}">Забронировать</button>
@@ -355,7 +364,8 @@ function openBookingForMoto(moto) {
   if (selectedStart && selectedEnd) {
     const n = daysInclusive(selectedStart, selectedEnd);
     modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineWord(n)}`;
-    modalTotal.textContent = rub((moto.price_per_day || 0) * n);
+    const pricePerDay = getDynamicPrice(moto, n);
+    modalTotal.textContent = rub(pricePerDay * n);
   } else {
     modalRange.textContent = "—";
     modalTotal.textContent = "—";
@@ -470,3 +480,21 @@ filterForm?.addEventListener("submit", (e) => {
   document.body.style.overflow = "";
   applyFilters();
 });
+
+
+/* === Расчёт динамической цены в зависимости от количества дней === */
+function getDynamicPrice(moto, days) {
+  if (!moto.price_tiers || !moto.price_tiers.length) {
+    return Number(moto.price_per_day) || 0;
+  }
+
+  // ищем подходящий диапазон по количеству дней
+  const tier = moto.price_tiers.find(t => {
+    const min = Number(t.min_days) || 0;
+    const max = t.max_days ? Number(t.max_days) : Infinity;
+    return days >= min && days <= max;
+  });
+
+  // если нашли подходящий диапазон — возвращаем его цену
+  return tier ? Number(tier.price_per_day) : Number(moto.price_per_day);
+}

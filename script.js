@@ -185,6 +185,9 @@ async function fetchCategory(endpoint, type = "default") {
    ============================== */
 // fetchNewCars();
 
+if(!localStorage.getItem('selectedCity')){
+  localStorage.setItem('selectedCity', 'Все')
+}
 
 const pickerCities = document.querySelector('.picker-city');
 
@@ -193,7 +196,7 @@ fetch(`${API_BASE}/core/cities/`)
   .then(res => {
     // создаём пункт "Все"
     const options = [
-      `<option value="Все" selected>Выберите город</option>`,
+      `<option value="Все" selected>Нажмите чтобы выбрать город</option>`,
       ...res.results.map(item => `<option value="${item.name}">${item.name}</option>`)
     ];
 
