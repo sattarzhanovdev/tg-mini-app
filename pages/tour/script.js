@@ -75,9 +75,14 @@ async function fetchCategories() {
 }
 
 async function fetchTours() {
-  const r = await fetch(`${API}/`);
+  const r = await fetch(`${API}/excursions/`);
   const data = await r.json();
-  allTours = data?.results || [];
+  const city = localStorage.getItem('selectedCity')
+  if(city === 'Все'){
+    allTours = data?.results || [];
+  }else{
+    allTours = data?.results.filter(item => item.city.name === city) || [];
+  }
 }
 
 async function fetchBookings() {
@@ -178,8 +183,8 @@ function renderTours(tours) {
           <div class="line"></div>
 
           <div class="price">
-            <h4>${tour.price_per_day}$</h4>
-            <p>за день</p>
+            <h4>${tour.price_per_person}฿</h4>
+            <p>за человека</p>
           </div>
 
           <button class="openBooking" ${tour.__hasConflict ? "disabled" : ""} data-id="${tour.id}">
@@ -220,8 +225,8 @@ function openBookingForTour(tour) {
   if (selectedStart && selectedEnd) {
     const n = daysInclusive(selectedStart, selectedEnd);
     dateSpan.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} дней`;
-    const total = (tour.price_per_day || 0) * n;
-    totalPrice.textContent = rub(total);
+    const total = tour.price_per_person;
+    totalPrice.textContent = total;
   }
 
   bookingModal.style.display = "flex";
@@ -266,7 +271,7 @@ filterForm?.addEventListener("submit", (e) => {
 
   // Пример фильтрации уже загруженных машин
   const filtered = allTours.filter(car => {
-    const matchPrice = (!from || car.price_per_day >= from) && (!to || car.price_per_day <= to);
+    const matchPrice = (!from || car.price_per_person >= from) && (!to || car.price_per_person <= to);
     return matchPrice;
   });
 

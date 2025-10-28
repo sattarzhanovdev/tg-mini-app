@@ -86,8 +86,42 @@ async function fetchCategories() {
 async function fetchCars() {
   const r = await fetch(`${API}/cars/`);
   const data = await r.json();
-  allCars = data?.results || [];
+  const city = localStorage.getItem('selectedCity')
+  if(city === 'Все'){
+    allCars = data?.results || [];
+  }else{
+    allCars = data?.results.filter(item => item.city.name === city) || [];
+  }
 }
+
+const brandsSelect = document.querySelector('.select_marka')
+const modelsSelect = document.querySelector('.select_model')
+
+fetch('https://telegram-mini-app-b3ah.onrender.com/api/cars/brands')
+  .then(res => res.json())
+  .then(res => {
+    console.log(res);
+    const template = res.map(item => `
+      <option value="${item.name}">
+        ${item.name}
+      </option>  
+    `)
+
+    brandsSelect.innerHTML = template
+  })
+
+fetch('https://telegram-mini-app-b3ah.onrender.com/api/cars/models')
+  .then(res => res.json())
+  .then(res => {
+    console.log(res);
+    const template = res.map(item => `
+      <option value="${item.name}">
+        ${item.name}
+      </option>  
+    `)
+
+    modelsSelect.innerHTML = template
+  })
 
 async function fetchBookings() {
   try {
@@ -214,7 +248,7 @@ function renderCars(cars) {
       <div class="card ${isBooked ? "unavailable" : ""}">
         <img src="${
           car.images?.[0]?.image ||
-          "../../images/no_photo.png"
+          "../../images/no_photo.jpg"
         }" alt="${car.title}">
         <div class="info">
           <div style="display: flex; justify-content: space-between;">
@@ -290,13 +324,15 @@ function openBookingForCar(car) {
   currentCar = car;
   if (!bookingModal) return;
 
+  resetModalDates(); // <— вот это добавь
+
   const photo = bookingModal.querySelector(".photo_product");
   const title = bookingModal.querySelector("h4");
   const desc = bookingModal.querySelector(".description");
   const range = bookingModal.querySelector(".date-pick-result");
   const totalPrice = bookingModal.querySelector(".price");
 
-  if (photo) photo.src = car.images?.[0]?.image || "../../images/no_photo.png";
+  if (photo) photo.src = car.images?.[0]?.image || "../../images/no_photo.jpg";
   if (title) title.textContent = car.title;
   if (desc) desc.textContent = car.description || "";
 
@@ -306,7 +342,7 @@ function openBookingForCar(car) {
     const total = (car.price_per_day || 0) * n;
     totalPrice.textContent = rub(total);
   } else {
-    range.textContent = "Выберите даты выше";
+    // range.textContent = "Выберите даты выше";
     totalPrice.textContent = "—";
   }
 
@@ -332,6 +368,59 @@ closeSuccess?.addEventListener("click", () => {
   successModal.style.display = "none";
   document.body.style.overflow = "";
 });
+
+
+/* ==============================
+   Выбор дат внутри bookingModal
+   ============================== */
+const modalStartInput = document.getElementById("modal-start");
+const modalEndInput = document.getElementById("modal-end");
+const modalRange = bookingModal?.querySelector(".date-pick-result");
+
+function updateModalDates() {
+  const sVal = modalStartInput.value;
+  const eVal = modalEndInput.value;
+
+  if (sVal && eVal) {
+    const s = toLocalDate(sVal);
+    const e = toLocalDate(eVal);
+
+    if (e < s) {
+      modalRange.textContent = "Дата окончания раньше начала!";
+      modalRange.style.color = "red";
+      return;
+    }
+
+    const n = daysInclusive(sVal, eVal);
+    modalRange.style.color = "";
+    modalRange.textContent = `${fmtRu(s)} — ${fmtRu(e)} · ${n} ${declineDays(n)}`;
+
+    // обновляем глобальные переменные
+    selectedStart = sVal;
+    selectedEnd = eVal;
+
+    // обновляем цену
+    if (currentCar) {
+      const total = (currentCar.price_per_day || 0) * n;
+      const totalPrice = bookingModal.querySelector(".price");
+      if (totalPrice) totalPrice.textContent = rub(total);
+    }
+  } else {
+    modalRange.textContent = "Выберите обе даты";
+    modalRange.style.color = "";
+  }
+}
+
+modalStartInput?.addEventListener("change", updateModalDates);
+modalEndInput?.addEventListener("change", updateModalDates);
+
+// при открытии модалки — очистим поля
+function resetModalDates() {
+  modalStartInput.value = "";
+  modalEndInput.value = "";
+  // modalRange.textContent = "Выберите даты";
+}
+
 
 /* ================
    Booking submit
@@ -424,16 +513,18 @@ filterForm?.addEventListener("submit", (e) => {
   e.preventDefault();
 
   const brand = document.getElementById("filterBrand").value.trim().toLowerCase();
+  const model = document.getElementById("filterModel").value.trim().toLowerCase();
   const year = document.getElementById("filterYear").value.trim();
   const from = Number(document.getElementById("priceFrom").value);
   const to = Number(document.getElementById("priceTo").value);
 
   // Пример фильтрации уже загруженных машин
   const filtered = allCars.filter(car => {
+    const matchModels = !model || car.title.toLowerCase().includes(model);
     const matchBrand = !brand || car.title.toLowerCase().includes(brand);
     const matchYear = !year || String(car.year) === year;
     const matchPrice = (!from || car.price_per_day >= from) && (!to || car.price_per_day <= to);
-    return matchBrand && matchYear && matchPrice;
+    return matchBrand && matchYear && matchPrice && matchModels;
   });
 
   renderCars(filtered);

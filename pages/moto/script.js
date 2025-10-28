@@ -55,6 +55,36 @@ let currentMoto = null;
 
 const BOOKING_STATUSES_BLOCK = new Set(["active", "pending"]);
 
+
+const brandsSelect = document.querySelector('.select_marka')
+const modelsSelect = document.querySelector('.select_model')
+
+fetch('https://telegram-mini-app-b3ah.onrender.com/api/cars/brands')
+  .then(res => res.json())
+  .then(res => {
+    console.log(res);
+    const template = res.map(item => `
+      <option value="${item.name}">
+        ${item.name}
+      </option>  
+    `)
+
+    brandsSelect.innerHTML = template
+  })
+
+fetch('https://telegram-mini-app-b3ah.onrender.com/api/cars/models')
+  .then(res => res.json())
+  .then(res => {
+    console.log(res);
+    const template = res.map(item => `
+      <option value="${item.name}">
+        ${item.name}
+      </option>  
+    `)
+
+    modelsSelect.innerHTML = template
+  })
+  
 /* ================
    Helpers
    ================ */
@@ -85,7 +115,12 @@ async function fetchCategories() {
 async function fetchMotorcycles() {
   const r = await fetch(`${API}/motorcycles/`);
   const data = await r.json();
-  allMotorcycles = data?.results || [];
+  const city = localStorage.getItem('selectedCity')
+  if(city === 'Все'){
+    allMotorcycles = data?.results || [];
+  }else{
+    allMotorcycles = data?.results.filter(item => item.city.name === city) || [];
+  }
 }
 
 async function fetchBookings() {
@@ -255,6 +290,8 @@ function renderMotorcycles(motos) {
    ================ */
 function openBookingForMoto(moto) {
   currentMoto = moto;
+  
+  resetModalDates(); // <— вот это добавь
 
   const photo = bookingModal.querySelector(".photo_product");
   const title = bookingModal.querySelector("h4");
@@ -271,7 +308,6 @@ function openBookingForMoto(moto) {
     range.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
     total.textContent = `${rub(moto.price_per_day * n)}`;
   } else {
-    range.textContent = "Выберите даты";
     total.textContent = "—";
   }
 
@@ -353,6 +389,56 @@ bookingForm?.addEventListener("submit", async (e) => {
     btn.textContent = prevText;
   }
 });
+
+
+/* ==============================
+   Выбор дат внутри bookingModal
+   ============================== */
+const modalStartInput = document.getElementById("modal-start");
+const modalEndInput = document.getElementById("modal-end");
+const modalRange = bookingModal?.querySelector(".date-pick-result");
+
+function updateModalDates() {
+  const sVal = modalStartInput.value;
+  const eVal = modalEndInput.value;
+
+  if (sVal && eVal) {
+    const s = toLocalDate(sVal);
+    const e = toLocalDate(eVal);
+
+    if (e < s) {
+      modalRange.textContent = "Дата окончания раньше начала!";
+      modalRange.style.color = "red";
+      return;
+    }
+
+    const n = daysInclusive(sVal, eVal);
+    modalRange.style.color = "";
+    modalRange.textContent = `${fmtRu(s)} — ${fmtRu(e)} · ${n} ${declineDays(n)}`;
+
+    // обновляем глобальные переменные
+    selectedStart = sVal;
+    selectedEnd = eVal;
+
+    // обновляем цену
+    if (currentCar) {
+      const total = (currentCar.price_per_day || 0) * n;
+      const totalPrice = bookingModal.querySelector(".price");
+      if (totalPrice) totalPrice.textContent = rub(total);
+    }
+  } else {
+    modalRange.style.color = "";
+  }
+}
+
+modalStartInput?.addEventListener("change", updateModalDates);
+modalEndInput?.addEventListener("change", updateModalDates);
+
+// при открытии модалки — очистим поля
+function resetModalDates() {
+  modalStartInput.value = "";
+  modalEndInput.value = "";
+}
 
 closeSuccess?.addEventListener("click", () => {
   successModal.style.display = "none";

@@ -184,3 +184,34 @@ async function fetchCategory(endpoint, type = "default") {
    Стартовая загрузка
    ============================== */
 fetchNewCars();
+
+
+const pickerCities = document.querySelector('.picker-city');
+
+fetch(`${API_BASE}/core/cities/`)
+  .then(res => res.json())
+  .then(res => {
+    // создаём пункт "Все"
+    const options = [
+      `<option value="Все">Все</option>`,
+      ...res.results.map(item => `<option value="${item.name}">${item.name}</option>`)
+    ];
+
+    pickerCities.innerHTML = options.join('');
+
+    // восстановим сохранённый город из localStorage
+    const savedCity = localStorage.getItem('selectedCity');
+    if (savedCity) {
+      pickerCities.value = savedCity;
+    } else {
+      pickerCities.value = 'all'; // по умолчанию — "Все"
+    }
+  })
+  .catch(err => console.error('Ошибка загрузки городов:', err));
+
+// слушаем выбор пользователя
+pickerCities.addEventListener('change', (e) => {
+  const selectedCity = e.target.value;
+  localStorage.setItem('selectedCity', selectedCity);
+  console.log('Выбран город:', selectedCity);
+});

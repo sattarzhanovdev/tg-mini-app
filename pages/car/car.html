@@ -88,9 +88,16 @@
             </div>
             <p class="description">Премиальный гибридный кроссовер (range-extender) мощностью 449 л.с., с запасом хода до 1100 км и расширенным набором комфорта и ассистентов.</p>
             <div class="line"></div>
+            <div class="date-range-picker">
+              <label>Дата аренды:</label>
+              <div class="inputs">
+                <input type="date" id="modal-start" />
+                <input type="date" id="modal-end" />
+              </div>
+            </div>
+            <p class="date-pick-result"></p>
             <div class="row">
               <h4>Итого: <span class="price">1200$</span></h4>
-              <p class="date-pick-result">21 окт - 24 окт · 4 дня</p>
             </div>
           </div>
 
@@ -143,7 +150,13 @@
             <label>Выберите марку</label>
             <div class="input">
               <img src="../../images/car_filter.svg" alt="car">
-              <input type="text" id="filterBrand" placeholder="Марка">
+              <select class="select_marka" id="filterBrand"></select>
+            </div>
+
+            <label>Выберите модель</label>
+            <div class="input">
+              <img src="../../images/car_filter.svg" alt="car">
+              <select class="select_model" id="filterModel"></select>
             </div>
 
             <label>Выберите год</label>

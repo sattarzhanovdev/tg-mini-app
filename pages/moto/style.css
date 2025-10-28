@@ -19,7 +19,7 @@ body{
 }
 
 .logo{
-  margin-top: 40px;
+  margin-top: 60px;
   margin-bottom: 40px;
   display: flex;
   justify-content: center;
@@ -177,6 +177,30 @@ header img{
   opacity: 1;
   cursor: pointer;
 }
+
+.date-range-picker {
+  margin: 10px 0;
+}
+
+.date-range-picker label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.date-range-picker .inputs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.date-range-picker input[type="date"] {
+  flex: 1;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
 
 .dash {
   font-size: 18px;

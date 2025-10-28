@@ -36,17 +36,19 @@ const startInput = document.getElementById("start-date");
 const endInput = document.getElementById("end-date");
 const showBtn = document.querySelector(".show");
 
-// Модалка бронирования
+// Модалки
 const bookingModal = document.getElementById("bookingModal");
-const bookingClose = document.getElementById("bookingClose");
+const bookingClose = bookingModal?.querySelector(".close");
 const bookingForm = document.getElementById("bookingForm");
+const successModal = document.getElementById("successModal");
+const closeSuccess = document.getElementById("closeSuccess");
 
-// Элементы внутри модалки (используем data-атрибуты из патча)
-const modalPhoto = bookingModal?.querySelector('[data-modal="photo"]');
-const modalTitle = bookingModal?.querySelector('[data-modal="title"]');
-const modalDesc  = bookingModal?.querySelector('[data-modal="desc"]');
-const modalRange = bookingModal?.querySelector('[data-modal="range"]');
-const modalTotal = bookingModal?.querySelector('[data-modal="total"]');
+// Элементы внутри bookingModal
+const modalPhoto = bookingModal?.querySelector(".photo_product");
+const modalTitle = bookingModal?.querySelector("h4");
+const modalDesc = bookingModal?.querySelector(".description");
+const modalRange = bookingModal?.querySelector(".date-pick-result");
+const modalTotal = bookingModal?.querySelector(".price");
 
 /* ================
    State
@@ -73,21 +75,16 @@ const toLocalDate = (iso) => new Date(iso + "T00:00:00");
 const fmtRu = (d) => d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" });
 const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} ฿`;
 
-// Инклюзивное количество дней (если нужно «по ночам» — используйте эксклюзивно)
 const daysInclusive = (startIso, endIso) =>
   Math.max(1, Math.round((toLocalDate(endIso) - toLocalDate(startIso)) / dayMs) + 1);
 
-// Склонение «день/дня/дней»
 const declineDays = (n) => {
   if (n % 10 === 1 && n % 100 !== 11) return "день";
   if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return "дня";
   return "дней";
 };
 
-// Пересечение периодов (инклюзивные границы)
 const overlaps = (aStart, aEnd, bStart, bEnd) => (aStart <= bEnd) && (aEnd >= bStart);
-// Если в бэке end_date — это день выезда (эксклюзив), используйте:
-// const overlaps = (aStart, aEnd, bStart, bEnd) => (aStart < bEnd) && (aEnd > bStart);
 
 /* ================
    API
@@ -106,7 +103,12 @@ async function fetchHouses() {
   const r = await fetch(`${API}/houses/`);
   if (!r.ok) throw new Error("Не удалось загрузить дома");
   const data = await r.json();
-  allHouses = data?.results || [];
+  const city = localStorage.getItem('selectedCity')
+  if(city === 'Все'){
+    allHouses = data?.results || [];
+  }else{
+    allHouses = data?.results.filter(item => item.city.name === city) || [];
+  }
 }
 
 async function fetchBookings() {
@@ -189,8 +191,8 @@ showBtn?.addEventListener("click", async () => {
   showBtn.textContent = "Загрузка...";
 
   try {
-    await fetchBookings(); // актуальные брони
-    applyFilters();        // применяем к списку
+    await fetchBookings();
+    applyFilters();
   } catch (err) {
     console.error("Ошибка при обновлении бронирований:", err);
     alert("Ошибка загрузки доступности, попробуйте ещё раз");
@@ -276,7 +278,6 @@ function renderHouses(houses) {
 
   cardsContainer.innerHTML = html;
 
-  // Навешиваем обработчики «Забронировать»
   $$(".openBooking:not([disabled])", cardsContainer).forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = Number(btn.dataset.id);
@@ -292,11 +293,8 @@ function renderHouses(houses) {
 function openBookingForHouse(house) {
   if (!bookingModal) return;
   currentHouse = house;
+  resetModalDates();
 
-  const start = selectedStart;
-  const end = selectedEnd;
-
-  // Наполнение модалки
   if (modalPhoto) modalPhoto.src = house.images?.[0]?.image || "../../images/no_photo.png";
   if (modalTitle) modalTitle.textContent = house.title || "Объект";
   if (modalDesc) {
@@ -305,42 +303,70 @@ function openBookingForHouse(house) {
       house.description || `${house.area ? house.area + " кв/м · " : ""}${featuresText || ""}`;
   }
 
-  if (start && end) {
-    const n = daysInclusive(start, end); // если нужны «ночи», замените на эксклюзив
-    if (modalRange) {
-      modalRange.textContent = `${fmtRu(toLocalDate(start))} — ${fmtRu(
-        toLocalDate(end)
-      )} · ${n} ${declineDays(n)}`;
-    }
-    const total = (house.price_per_day || 0) * n;
-    if (modalTotal) modalTotal.textContent = rub(total);
-  } else {
-    if (modalRange) modalRange.textContent = "Выберите даты выше";
-    if (modalTotal) modalTotal.textContent = "—";
-  }
-
-  // Открытие
   bookingModal.style.display = "flex";
   document.body.style.overflow = "hidden";
-
-  // Сброс формы при каждом открытии
   bookingForm?.reset?.();
 }
 
+/* ================
+   Modal close
+   ================ */
 function closeBooking() {
-  if (!bookingModal) return;
   bookingModal.style.display = "none";
   document.body.style.overflow = "";
 }
-
 bookingClose?.addEventListener("click", closeBooking);
-window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeBooking();
-});
-// Закрытие по клику на фон
+window.addEventListener("keydown", (e) => e.key === "Escape" && closeBooking());
 bookingModal?.addEventListener("click", (e) => {
   if (e.target?.id === "bookingModal") closeBooking();
 });
+
+/* ==============================
+   Даты внутри bookingModal
+   ============================== */
+const modalStartInput = document.getElementById("modal-start");
+const modalEndInput = document.getElementById("modal-end");
+
+function updateModalDates() {
+  const sVal = modalStartInput.value;
+  const eVal = modalEndInput.value;
+
+  if (sVal && eVal) {
+    const s = toLocalDate(sVal);
+    const e = toLocalDate(eVal);
+
+    if (e < s) {
+      modalRange.textContent = "Дата окончания раньше начала!";
+      modalRange.style.color = "red";
+      return;
+    }
+
+    const n = daysInclusive(sVal, eVal);
+    modalRange.style.color = "";
+    modalRange.textContent = `${fmtRu(s)} — ${fmtRu(e)} · ${n} ${declineDays(n)}`;
+
+    selectedStart = sVal;
+    selectedEnd = eVal;
+
+    if (currentHouse) {
+      const total = (currentHouse.price_per_day || 0) * n;
+      if (modalTotal) modalTotal.textContent = rub(total);
+    }
+  } else {
+    modalRange.style.color = "";
+    modalRange.textContent = "Выберите даты";
+  }
+}
+
+modalStartInput?.addEventListener("change", updateModalDates);
+modalEndInput?.addEventListener("change", updateModalDates);
+
+function resetModalDates() {
+  modalStartInput.value = "";
+  modalEndInput.value = "";
+  if (modalRange) modalRange.textContent = "Выберите даты";
+  if (modalTotal) modalTotal.textContent = "—";
+}
 
 /* ================
    Booking submit
@@ -357,7 +383,7 @@ bookingForm?.addEventListener("submit", async (e) => {
   if (!user?.id) return alert("Откройте Mini App в Telegram!");
 
   const payload = {
-    car: currentHouse.id,
+    house: currentHouse.id,
     start_date: selectedStart,
     end_date: selectedEnd,
     telegram_id: user.id,
@@ -380,7 +406,6 @@ bookingForm?.addEventListener("submit", async (e) => {
 
     if (!res.ok) throw new Error(await res.text());
 
-    // Успешная отправка
     tg?.HapticFeedback?.notificationOccurred?.("success");
     bookingModal.style.display = "none";
     successModal.style.display = "flex";
@@ -388,7 +413,6 @@ bookingForm?.addEventListener("submit", async (e) => {
 
     await fetchBookings();
     applyFilters();
-
   } catch (err) {
     console.error(err);
     tg?.HapticFeedback?.notificationOccurred?.("error");
@@ -404,9 +428,12 @@ closeSuccess?.addEventListener("click", () => {
   document.body.style.overflow = "";
 });
 
+/* ================
+   Filter modal
+   ================ */
 const filterBtn = document.querySelector(".filter");
 const filterModal = document.getElementById("filterModal");
-const filterClose = filterModal.querySelector(".close");
+const filterClose = filterModal?.querySelector(".close");
 const filterForm = document.getElementById("filterForm");
 
 filterBtn?.addEventListener("click", () => {
@@ -426,16 +453,14 @@ filterModal?.addEventListener("click", (e) => {
   }
 });
 
-// Обработка формы
 filterForm?.addEventListener("submit", (e) => {
   e.preventDefault();
-
   const from = Number(document.getElementById("priceFrom").value);
   const to = Number(document.getElementById("priceTo").value);
 
-  // Пример фильтрации уже загруженных машин
-  const filtered = allHouses.filter(car => {
-    const matchPrice = (!from || car.price_per_day >= from) && (!to || car.price_per_day <= to);
+  const filtered = allHouses.filter((house) => {
+    const matchPrice =
+      (!from || house.price_per_day >= from) && (!to || house.price_per_day <= to);
     return matchPrice;
   });
 
@@ -445,13 +470,13 @@ filterForm?.addEventListener("submit", (e) => {
 });
 
 /* ================
-   Bottom nav (активное состояние)
+   Bottom nav
    ================ */
 const navLinks = document.querySelectorAll("footer .bottom__bar li a");
-navLinks.forEach((link) => {
+navLinks.forEach((link) =>
   link.addEventListener("click", (e) => {
     e.preventDefault();
     navLinks.forEach((l) => l.classList.remove("active"));
     link.classList.add("active");
-  });
-});
+  })
+);

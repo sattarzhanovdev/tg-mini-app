@@ -60,42 +60,31 @@
         <div class="modal-content">
           <span class="close">&times;</span>
           <h3>Детали заказа</h3>
-          
+
           <div class="card">
             <img src="../../images/car_img.png" alt="car" class="photo_product">
             <h4>Lixiang L7 Ultra</h4>
-            <div>
-              <li>
-                <img src="../../images/car_parameters/motor.svg" alt="motor">
-                1.6L
-              </li>
-              <li>
-                <img src="../../images/car_parameters/settings.svg" alt="motor">
-                АКПП
-              </li>
-              <li>
-                <img src="../../images/car_parameters/road.svg" alt="motor">
-                700km
-              </li>
-              <li>
-                <img src="../../images/car_parameters/oil.svg" alt="motor">
-                Гибрид
-              </li>
-            </div>
             <p class="description">Премиальный гибридный кроссовер (range-extender) мощностью 449 л.с., с запасом хода до 1100 км и расширенным набором комфорта и ассистентов.</p>
             <div class="line"></div>
+            <div class="date-range-picker">
+              <label>Дата аренды:</label>
+              <div class="inputs">
+                <input type="date" id="modal-start" />
+                <input type="date" id="modal-end" />
+              </div>
+            </div>
+            <p class="date-pick-result"></p>
             <div class="row">
-              <h4>Итого: <span class="price">1200$</span></h4>
-              <p>21 окт - 24 окт · 4 дня</p>
+              <h4>Итого: <span class="price">По договоренности</span></h4>
             </div>
           </div>
 
           <form class="booking-form"  id="bookingForm" >
-            <label>Дата аренды</label>
+            <!-- <label>Дата аренды</label>
             <div class="input">
               <img src="../../images/date.svg" alt="date">
               <span class="date-time"></span>
-            </div>
+            </div> -->
 
             <label>Имя</label>
             <div class="input">
