@@ -193,7 +193,7 @@ fetch(`${API_BASE}/core/cities/`)
   .then(res => {
     // создаём пункт "Все"
     const options = [
-      `<option value="Все" selected>Все</option>`,
+      `<option value="Все" selected>Выберите город</option>`,
       ...res.results.map(item => `<option value="${item.name}">${item.name}</option>`)
     ];
 

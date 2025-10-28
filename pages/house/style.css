@@ -431,6 +431,7 @@ header img{
 .close {
   float: right;
   font-size: 24px;
+  margin-top: 40px;
   cursor: pointer;
 }
 
@@ -438,6 +439,7 @@ header img{
 .modal-content h3 {
   margin: 10px 20px;
   font-family: "SF Pro medium";
+  margin-top: 40px;
 }
 
 .modal-content .card{
