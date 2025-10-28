@@ -194,7 +194,10 @@ function renderHouses(houses) {
         <div class="info">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <h4>${h.title}</h4>
-            <p>${h.area ?? "—"} кв/м</p>
+            <p>
+              ${h.area ?? "—"} кв/м <br>
+              ${h.bedrooms ?? "-"} спален
+            </p>
           </div>
 
           ${(h.features?.length ? `<div class="goods">${h.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : "")}
