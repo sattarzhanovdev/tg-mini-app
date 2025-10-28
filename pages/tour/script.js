@@ -115,8 +115,7 @@ function renderCategories() {
 /* Нажатие "Посмотреть" */
 showBtn?.addEventListener("click", async () => {
   selectedStart = startInput.value;
-  selectedEnd   = endInput.value;
-  if (!selectedStart || !selectedEnd) return alert("Выберите обе даты");
+  if (!selectedStart) return alert("Выберите дату начала");
 
   showBtn.disabled = true;
   const old = showBtn.textContent;
@@ -129,8 +128,10 @@ showBtn?.addEventListener("click", async () => {
 
 /* Фильтрация и рендер */
 function applyFilters() {
-  if (!selectedStart || !selectedEnd) {
-    cardsContainer.innerHTML = `<p style="text-align:center;color:#99A2AD;margin-top:40px;">Пожалуйста, выберите даты аренды</p>`;
+  if (!selectedStart) {
+    cardsContainer.innerHTML = `<p style="text-align:center;color:#99A2AD;margin-top:40px;">
+      Пожалуйста, выберите дату начала аренды
+    </p>`;
     return;
   }
 
@@ -141,9 +142,12 @@ function applyFilters() {
 
   // доступность по броням
   const s = toLocalDate(selectedStart);
-  const e = toLocalDate(selectedEnd);
   list = list.map(t => {
-    const hasConflict = allBookings.some(b => b.tour === t.id && overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date)));
+    const hasConflict = allBookings.some(
+      b => b.tour === t.id &&
+     ["active", "pending", "confirmed"].includes(b.status) &&
+     toLocalDate(b.end_date) >= s
+    );
     return { ...t, __hasConflict: hasConflict };
   });
 
@@ -175,9 +179,9 @@ function renderTours(tours) {
           ${(t.features?.length ? `<div class="goods">${t.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : "")}
 
           <div class="line"></div>
-          <<div class="price">
+          <div class="price">
             ${(() => {
-              let pricePerDay = Number(t.price_per_day);
+              let pricePerDay = Number(t.price_per_person);
               let total = pricePerDay;
               let days = 1;
 
@@ -221,7 +225,7 @@ function openBooking(tour) {
 
   if (selectedStart && selectedEnd) {
     const n = nights(selectedStart, selectedEnd);
-    modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
+    modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))}${selectedEnd ? " — " + fmtRu(toLocalDate(selectedEnd)) : ""}`;
     const pricePerPerson = getDynamicTourPrice(tour, n);
     modalTotal.textContent = rub(pricePerPerson);
   } else {
@@ -250,7 +254,7 @@ closeSuccess?.addEventListener("click", () => {
 bookingForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!currentTour) return alert("Выберите экскурсию");
-  if (!selectedStart || !selectedEnd) return alert("Выберите даты");
+  if (!selectedStart) return alert("Выберите даты");
 
   const name = bookingForm.querySelector("input[placeholder='Ваше имя']")?.value.trim();
   const phone = bookingForm.querySelector("input[placeholder='Ваш номер телефона']")?.value.trim();
@@ -259,7 +263,6 @@ bookingForm?.addEventListener("submit", async (e) => {
   const payload = {
     excursion: currentTour.id,
     start_date: selectedStart,
-    end_date: selectedEnd,
     telegram_id: user?.id || 102445,
     client_name: name,
     phone_number: phone,
