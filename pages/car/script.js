@@ -31,6 +31,7 @@ const modalTitle = bookingModal?.querySelector(".car-title");
 const modalDesc = bookingModal?.querySelector(".description");
 const modalRange = bookingModal?.querySelector(".date-pick-result");
 const modalPrice = bookingModal?.querySelector(".price");
+const modalTotal = bookingModal?.querySelector(".price");
 
 
 const sortSelect = document.getElementById("sortPrice");
@@ -373,24 +374,51 @@ function openBooking(car) {
   bookingModal.style.display = "flex";
   document.body.style.overflow = "hidden";
 
-  // наполняем данные
   modalPhoto.src = car.images?.[0]?.image || "../../images/no_photo.jpg";
   modalTitle.textContent = car.title;
-  modalDesc.textContent = car.description || "";
+  modalDesc.textContent  = car.description || "";
 
-  // показываем выбранные пользователем даты
-  if (selectedStart && selectedEnd) {
-    const n = daysExclusiveNights(selectedStart, selectedEnd);
-    modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(
-      toLocalDate(selectedEnd)
-    )} · ${n} ${declineDays(n)}`;
-    const pricePerDay = getDynamicPrice(car, n);
-    modalPrice.textContent = rub(pricePerDay * n);
+  const deliverySelect = bookingModal.querySelector(".delivery");
+  deliverySelect.innerHTML = "";
+
+  // добавляем варианты доставки
+  if (car.delivery_zones?.length) {
+    const options = car.delivery_zones
+      .filter(z => z.is_active)
+      .map(z => `<option value="${z.price}" data-name="${z.name}">${z.name} (+${rub(z.price)})</option>`)
+      .join("");
+    deliverySelect.innerHTML = `<option value="0">Без доставки</option>` + options;
   } else {
-    modalRange.textContent = "Даты не выбраны";
-    modalPrice.textContent = "—";
+    deliverySelect.innerHTML = `<option value="0">Без доставки</option>`;
   }
+
+  // расчёт цен
+  const updateTotal = () => {
+    if (!selectedStart || !selectedEnd) {
+      modalRange.textContent = "Даты не выбраны";
+      modalTotal.textContent = "—";
+      return;
+    }
+
+    const days = daysExclusiveNights(selectedStart, selectedEnd);
+    const basePrice = getDynamicPrice(car, days);
+    const rentTotal = basePrice * days;
+    const delivery = parseFloat(deliverySelect.value || 0);
+    const grandTotal = rentTotal + delivery;
+
+    modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${days} ${declineDays(days)}`;
+    modalTotal.textContent = `${rub(grandTotal)} (включая доставку ${rub(delivery)})`;
+  };
+
+  // при изменении зоны пересчитываем сумму
+  deliverySelect.addEventListener("change", updateTotal);
+
+  // первичный расчёт
+  updateTotal();
+
+  bookingForm?.reset?.();
 }
+
 
 
 bookingClose?.addEventListener("click", () => {
@@ -439,6 +467,10 @@ bookingForm?.addEventListener("submit", async (e) => {
   const phone = bookingForm.querySelector("input[placeholder='Ваш номер телефона']").value.trim();
   const comment = bookingForm.querySelector("input[placeholder='Ваш комментарий']").value.trim();
 
+  const deliverySelect = bookingForm.querySelector(".delivery");
+  const deliveryPrice = parseFloat(deliverySelect?.value || 0);
+  const deliveryName = deliverySelect?.selectedOptions?.[0]?.dataset?.name || null;
+
   const payload = {
     car: currentCar.id,
     start_date: selectedStart,
@@ -450,6 +482,8 @@ bookingForm?.addEventListener("submit", async (e) => {
     provider_terms_accepted: true,
     service_terms_accepted: true,
     comment,
+    delivery_zone_name: deliveryName,
+    delivery_price: deliveryPrice
   };
 
   const btn = bookingForm.querySelector(".btn");
@@ -536,17 +570,24 @@ filterBtn?.addEventListener("click", async () => {
 
 /* === Расчёт динамической цены в зависимости от количества дней === */
 function getDynamicPrice(car, days) {
-  if (!car.price_tiers || !car.price_tiers.length) {
-    return Number(car.price_per_day) || 0;
+  // Если есть уровни цен
+  if (car.price_tiers && car.price_tiers.length) {
+    // фильтруем только активные уровни
+    const activeTiers = car.price_tiers.filter(t => t.is_active);
+
+    // сортируем по min_days по возрастанию
+    activeTiers.sort((a, b) => a.min_days - b.min_days);
+
+    // ищем подходящий уровень (последний, у которого min_days <= days)
+    let matchedTier = null;
+    for (const tier of activeTiers) {
+      if (days >= tier.min_days) matchedTier = tier;
+    }
+
+    // если нашли уровень — возвращаем его цену
+    if (matchedTier) return Number(matchedTier.price_per_day);
   }
 
-  // ищем подходящий диапазон по количеству дней
-  const tier = car.price_tiers.find(t => {
-    const min = Number(t.min_days) || 0;
-    const max = t.max_days ? Number(t.max_days) : Infinity;
-    return days >= min && days <= max;
-  });
-
-  // если нашли подходящий диапазон — возвращаем его цену
-  return tier ? Number(tier.price_per_day) : Number(car.price_per_day);
+  // иначе — стандартная цена
+  return Number(car.price_per_day);
 }

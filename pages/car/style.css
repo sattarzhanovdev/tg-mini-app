@@ -1080,6 +1080,47 @@ footer .bottom__bar li a.active img {
   }
 }
 
+/* === Поле "Доставка" === */
+.input select.delivery {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+  font-family: "SF Pro medium";
+  color: #000;
+  appearance: none;
+  cursor: pointer;
+}
+
+/* Добавляем стрелку справа, как у стандартного select */
+.input select.delivery {
+  background-image: url("../../images/arrow-down.svg");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  padding-right: 28px;
+}
+
+/* Для иконки грузовика */
+.input img[alt="phone"] {
+  width: 18px;
+  filter: brightness(0);
+}
+
+/* При фокусе — лёгкий эффект */
+.input:focus-within {
+  border-color: #1B86FF;
+  background: rgba(27, 134, 255, 0.15);
+}
+
+/* Адаптив под маленькие экраны */
+@media (max-width: 430px) {
+  .input select.delivery {
+    font-size: 14px;
+  }
+}
+
 
 /* === SUCCESS MODAL === */
 .success-modal {
