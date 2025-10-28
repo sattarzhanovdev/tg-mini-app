@@ -374,6 +374,9 @@ bookingModal?.addEventListener("click", (e) => {
   }
 });
 
+const modalStartInput = document.getElementById("modal-start");
+const modalEndInput   = document.getElementById("modal-end");
+
 modalStartInput?.addEventListener("change", updateModalDates);
 modalEndInput?.addEventListener("change", updateModalDates);
 
@@ -450,46 +453,41 @@ const API_CARS = `${API_BASE}/cars`;
 /* === Загрузка данных в фильтр === */
 async function loadFilterData() {
   try {
-    // --- Загрузка марок ---
-    const brandsRes = await fetch(`${API_CARS}/brands/`);
-    const brands = await brandsRes.json();
+    // BRANDS
+    const brandsRes = await fetch(`${API_CARS}/brands`);
+    if (!brandsRes.ok) throw new Error(`brands HTTP ${brandsRes.status}`);
+    const brandsJson = await brandsRes.json();
+    const brands = Array.isArray(brandsJson) ? brandsJson : (brandsJson?.results || []);
     const brandSelect = document.getElementById("filterBrand");
-    brandSelect.innerHTML =
-      '<option value="">Любая</option>' +
-      brands
-        .map(
-          (b) => `
-        <option value="${b.id}">
-          ${b.name}
-        </option>`
-        )
-        .join("");
+    brandSelect.innerHTML = '<option value="">Любая</option>' +
+      brands.map(b => `<option value="${b.id}">${b.name}</option>`).join("");
 
-    // --- Загрузка всех моделей ---
-    const modelsRes = await fetch(`${API_CARS}/models/`);
-    const models = await modelsRes.json();
+    // MODELS
+    const modelsRes = await fetch(`${API_CARS}/models`);
+    if (!modelsRes.ok) throw new Error(`models HTTP ${modelsRes.status}`);
+    const modelsJson = await modelsRes.json();
+    const allModels = Array.isArray(modelsJson) ? modelsJson : (modelsJson?.results || []);
     const modelSelect = document.getElementById("filterModel");
 
-    function renderModels(list) {
-      modelSelect.innerHTML =
-        '<option value="">Любая</option>' +
-        list.map((m) => `<option value="${m.id}">${m.name}</option>`).join("");
-    }
+    const renderModels = (list) => {
+      modelSelect.innerHTML = '<option value="">Любая</option>' +
+        list.map(m => `<option value="${m.id}">${m.name}</option>`).join("");
+    };
+    renderModels(allModels);
 
-    renderModels(models);
-
-    // --- Обновление моделей при выборе марки ---
-    brandSelect.addEventListener("change", (e) => {
-      const brandId = parseInt(e.target.value);
-      if (!brandId) return renderModels(models); // показываем все модели
-      const filtered = models.filter((m) => m.brand === brandId);
+    brandSelect.onchange = (e) => {
+      const brandId = Number(e.target.value);
+      if (!brandId) return renderModels(allModels);
+      const filtered = allModels.filter(m => {
+        const id = (m.brand?.id ?? m.brand_id ?? m.brand);
+        return Number(id) === brandId;
+      });
       renderModels(filtered);
-    });
+    };
   } catch (err) {
     console.error("Ошибка загрузки фильтра:", err);
   }
 }
-
 /* === Открытие фильтра === */
 filterBtn?.addEventListener("click", async () => {
   filterModal.style.display = "flex";
