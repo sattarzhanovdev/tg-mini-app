@@ -175,21 +175,21 @@ function renderTours(tours) {
           ${(t.features?.length ? `<div class="goods">${t.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : "")}
 
           <div class="line"></div>
-          <div class="price">
+          <<div class="price">
             ${(() => {
-              let pricePerDay = Number(car.price_per_day);
+              let pricePerDay = Number(t.price_per_day);
               let total = pricePerDay;
               let days = 1;
 
               if (selectedStart && selectedEnd) {
                 days = daysExclusiveNights(selectedStart, selectedEnd);
-                pricePerDay = getDynamicPrice(car, days);
+                pricePerDay = getDynamicPrice(t, days);
                 total = pricePerDay * days;
               }
 
               return `
-                <h4>${rub(total)}</h4>
-                <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(car.deposit || 0)}</p>
+                <h4>${rub(total + t.deposit)}</h4>
+                <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(t.deposit || 0)}</p>
               `;
             })()}
           </div>

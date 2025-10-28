@@ -254,21 +254,21 @@ function renderHouses(houses) {
           ${h.district ? `<p style="font-size:14px;color:#6e6e6e;">Район: ${h.district?.name || h.district}</p>` : ""}
           ${(h.features?.length ? `<div class="goods">${h.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : "")}
           <div class="line"></div>
-          <div class="price">
+          <<div class="price">
             ${(() => {
-              let pricePerDay = Number(car.price_per_day);
+              let pricePerDay = Number(h.price_per_day);
               let total = pricePerDay;
               let days = 1;
 
               if (selectedStart && selectedEnd) {
                 days = daysExclusiveNights(selectedStart, selectedEnd);
-                pricePerDay = getDynamicPrice(car, days);
+                pricePerDay = getDynamicPrice(h, days);
                 total = pricePerDay * days;
               }
 
               return `
-                <h4>${rub(total)}</h4>
-                <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(car.deposit || 0)}</p>
+                <h4>${rub(total + h.deposit)}</h4>
+                <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(h.deposit || 0)}</p>
               `;
             })()}
           </div>
