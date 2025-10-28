@@ -246,9 +246,8 @@ function applyFilters() {
 
   renderCars(list);
 }
-
 function renderCars(cars) {
-  const container = document.querySelector('.cards');
+  const container = document.querySelector(".cards");
   if (!cars.length) {
     container.innerHTML = "<p>Нет доступных авто</p>";
     return;
@@ -260,13 +259,16 @@ function renderCars(cars) {
         ? car.images.map(img => `<img src="${img.image}" alt="${car.title}">`).join('')
         : `<img src="../../images/no_photo.jpg" alt="no photo">`;
 
+      const booked = car.__hasConflict; // если занято
+      const bookedText = booked ? "Недоступно" : "Забронировать";
+
       return `
-      <div class="card">
+      <div class="card ${booked ? "unavailable" : ""}">
         <div class="card-slider">
           <div class="slides">${images}</div>
           ${car.images?.length > 1
             ? `<button class="prev">‹</button><button class="next">›</button>`
-            : ''}
+            : ""}
         </div>
 
         <div class="info">
@@ -288,15 +290,28 @@ function renderCars(cars) {
             <p>${rub(car.price_per_day)}/день<br>Депозит: ${rub(car.deposit || 0)}</p>
           </div>
 
-          <button class="openBooking" data-id="${car.id}">Забронировать</button>
+          <button class="openBooking" data-id="${car.id}" ${booked ? "disabled" : ""}>
+            ${bookedText}
+          </button>
         </div>
       </div>`;
     })
-    .join('');
+    .join("");
 
-  // подключаем слайдеры
+  // инициализируем слайдеры
   initCarSliders();
+
+  // добавляем обработчик клика на каждую кнопку бронирования
+  document.querySelectorAll(".openBooking").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const id = e.target.dataset.id;
+      const car = cars.find((c) => String(c.id) === String(id));
+      if (!car || btn.disabled) return;
+      openBooking(car);
+    });
+  });
 }
+
 
 function initCarSliders() {
   document.querySelectorAll('.card-slider').forEach(slider => {
