@@ -480,3 +480,8 @@ navLinks.forEach((link) =>
     link.classList.add("active");
   })
 );
+
+
+const city = document.querySelector('.city')
+
+city.innerHTML = localStorage.getItem('selectedCity')

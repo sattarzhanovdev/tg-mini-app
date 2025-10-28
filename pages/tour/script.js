@@ -336,3 +336,7 @@ closeSuccess?.addEventListener("click", () => {
   successModal.style.display = "none";
   document.body.style.overflow = "";
 });
+
+const city = document.querySelector('.city')
+
+city.innerHTML = localStorage.getItem('selectedCity')
