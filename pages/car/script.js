@@ -316,7 +316,7 @@ function renderCars(cars) {
               }
 
               return `
-                <h4>${rub(total)}</h4>
+                <h4>${rub(pricePerDay)}</h4>
                 <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(car.deposit || 0)}</p>
               `;
             })()}
