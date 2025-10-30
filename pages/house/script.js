@@ -105,7 +105,7 @@ async function fetchBookings() {
 
 /* Init */
 (async function init() {
-  await Promise.all([fetchCategories(), fetchHouses()]);
+  await Promise.all([fetchCategories(), fetchHouses(), fetchBookings()]);
   renderCategories();
   loadDistricts();
   cardsContainer.innerHTML =
@@ -202,9 +202,22 @@ showBtn?.addEventListener("click", async () => {
   showBtn.textContent = oldText;
 });
 
+function isBlockedStatus(val) {
+  if (!val) return false;
+  const s = String(val).trim().toLowerCase();
+  // RU и EN варианты
+  return s === "активно" || s === "подтверждено" || s === "active" || s === "confirmed";
+}
+
+async function fetchBookings() {
+  const r = await fetch(`${API}/bookings/`);
+  const data = await r.json();
+  allBookings = data?.results || [];
+}
+
 /* === Основная фильтрация === */
 function applyFilters() {
-  // для посуточной аренды требуем обе даты
+  // Посуточно — требуем обе даты
   if (rentMode === "daily" && (!selectedStart || !selectedEnd)) {
     cardsContainer.innerHTML = `
       <p style="text-align:center;color:#99A2AD;margin-top:40px;">
@@ -213,70 +226,109 @@ function applyFilters() {
     return;
   }
 
-  let list = allHouses.slice();
 
-  // Берём значения фильтров
+
+  let list = allHouses.slice();
+  list = list.filter(house => {
+    const hasBlockedBooking = (allBookings || []).some(
+      b => b.house === house.id && isBlockedStatus(b.status || b.status_title)
+    );
+    return !hasBlockedBooking;
+  });
+
+  // --- значения фильтров ---
   const bedrooms = document.getElementById("filterBedrooms")?.value || "";
   const district = document.getElementById("filterDistrict")?.value || "";
+  const priceFromValue = document.getElementById("priceFrom")?.value?.trim?.();
+  const priceToValue   = document.getElementById("priceTo")?.value?.trim?.();
 
-  // --- Фильтры (только если пользователь выбрал) ---
+  // --- Категория ---
+  if (selectedCategory) {
+    list = list.filter(
+      h => (h.category_title || "").trim().toLowerCase() === selectedCategory.trim().toLowerCase()
+    );
+  }
+
+  // --- Фильтр спален ---
   if (bedrooms) {
     if (bedrooms === "5") list = list.filter(h => Number(h.bedrooms) >= 5);
     else list = list.filter(h => Number(h.bedrooms) === Number(bedrooms));
   }
 
+  // --- Район ---
   if (district) {
-    list = list.filter(
-      h => (h.district || "").toString().trim().toLowerCase() === district.trim().toLowerCase()
-    );
+    const d = district.trim().toLowerCase();
+    list = list.filter(h => (String(h.district || "")).trim().toLowerCase() === d);
   }
 
-  if (selectedCategory) {
-    list = list.filter(
-      h => h.category_title.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
-    );
-  }
-
-  // Фильтрация по цене — только если поля действительно заполнены
-  const priceFromValue = document.getElementById("priceFrom")?.value.trim();
-  const priceToValue = document.getElementById("priceTo")?.value.trim();
-
+  // --- Цена/день (поля заполнены) ---
   if (priceFromValue !== "" && !isNaN(priceFromValue)) {
     const min = Number(priceFromValue);
     list = list.filter(h => Number(h.price_per_day) >= min);
   }
-
   if (priceToValue !== "" && !isNaN(priceToValue)) {
     const max = Number(priceToValue);
     list = list.filter(h => Number(h.price_per_day) <= max);
   }
 
-  // --- Проверяем занятость по датам (только для посуточной) ---
+  // --- Фильтрация по режиму аренды (ТО ЧТО НУЖНО) ---
+  if (rentMode === "6m" || rentMode === "12m") {
+    const m = modeMonths(); // 6 или 12
+    const needDays = m * 30;
+    list = list.filter(h =>
+      (h.price_tiers || []).some(
+        t => t.is_active && Number(t.min_days) === Number(needDays)
+      )
+      // если используешь хелпер:
+      // hasExactTierForMonths(h, m)
+    );
+  }
+
+  // --- Бронь/пересечения — только для посуточного ---
   if (rentMode === "daily") {
     const s = toLocalDate(selectedStart);
     const e = toLocalDate(selectedEnd);
-    list = list.map(h => {
-      const conflicts = allBookings.some(
-        b =>
-          b.house === h.id &&
-          overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
+
+    // сначала убираем дома с заблокированными пересекающимися бронями
+    list = list.filter(h => {
+      const hasBlockedOverlap = (allBookings || []).some(b =>
+        b.house === h.id &&
+        isBlockedStatus(b.status || b.status_title) &&
+        overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
       );
-      return { ...h, __hasConflict: conflicts };
+      return !hasBlockedOverlap;
     });
-    list = list.filter(h => !h.__hasConflict);
+
+    // затем обычная проверка пересечений (если она у тебя уже была — оставь)
+    list = list
+      .map(h => {
+        const conflicts = (allBookings || []).some(
+          b => b.house === h.id &&
+              overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
+        );
+        return { ...h, __hasConflict: conflicts };
+      })
+      .filter(h => !h.__hasConflict);
   }
 
-  // --- Рендер ---
+  // --- Рендер/пустое состояние ---
   if (!list.length) {
+    const emptyMsg =
+      rentMode === "6m"
+        ? "Нет объектов с тарифом на 6 мес"
+        : rentMode === "12m"
+          ? "Нет объектов с тарифом на 12 мес"
+          : "Нет доступных объектов под выбранные условия";
     cardsContainer.innerHTML = `
       <p style="text-align:center;color:#99A2AD;margin-top:40px;">
-        Нет доступных объектов под выбранные условия
+        ${emptyMsg}
       </p>`;
     return;
   }
 
   renderHouses(list);
 }
+
 
 /* === Рендер карточек === */
 function renderHouses(houses) {
@@ -311,21 +363,19 @@ function renderHouses(houses) {
               if (rentMode === "daily") {
                 const days = (selectedStart && selectedEnd) ? nights(selectedStart, selectedEnd) : 1;
                 const pricePerDay = getDynamicPrice(h, days);
-                const total = pricePerDay * days;
                 return `
-                  <h4>${rub(total)}</h4>
-                  <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(h.deposit || 0)}</p>
+                  <h4>${rub(pricePerDay)}/день</h4>
+                  <p>${days} ${declineDays(days)}<br>Депозит: ${rub(h.deposit || 0)}</p>
                 `;
               } else {
                 const m = modeMonths(); // 6 или 12
-                const contractDays = m * 30;                   // считаем месяц = 30 дней
-                const pricePerDay = getDynamicPrice(h, contractDays);
-                const monthly = pricePerDay * 30;
-                const total = monthly * m;
-
+                const res = getContractPrice(h, m);
+                const hint = res.mode === "daily-fallback"
+                  ? `<br><span style="font-size:12px;color:#8a8a8a;">(по посуточной сетке)</span>`
+                  : "";
                 return `
-                  <h4>${rub(total)}</h4>
-                  <p>${rub(monthly)}/мес · ${m} мес<br>Депозит: ${rub(h.deposit || 0)}</p>
+                  <h4>${rub(res.monthly)}/мес</h4>
+                  <p>Контракт на ${m} мес<br>Депозит: ${rub(h.deposit || 0)}${hint}</p>
                 `;
               }
             })()}
@@ -384,7 +434,8 @@ function openBooking(house) {
 
   modalPhoto.src = house.images?.[0]?.image || "../../images/no_photo.png";
   const titleEl = modalTitle || document.querySelector(".car-title") || document.querySelector(".house-title");
-  if (titleEl) titleEl.textContent = house.title || "Объект";  modalDesc.textContent = house.description || (house.area ? `${house.area} кв/м` : "");
+  if (titleEl) titleEl.textContent = house.title || "Объект";
+  modalDesc.textContent = house.description || (house.area ? `${house.area} кв/м` : "");
 
   if (rentMode === "daily" && selectedStart && selectedEnd) {
     const n = nights(selectedStart, selectedEnd);
@@ -393,13 +444,11 @@ function openBooking(house) {
     modalTotal.textContent = rub(pricePerDay * n);
     if (ltcStartWrap) ltcStartWrap.style.display = "none";
   } else if (rentMode !== "daily") {
-    const m = modeMonths();
+    const m = modeMonths(); // 6 или 12
     modalRange.textContent = `Контракт на ${m} мес`;
 
-    const contractDays = m * 30;
-    const pricePerDay = getDynamicPrice(house, contractDays);
-    const monthly = pricePerDay * 30;
-    modalTotal.textContent = rub(monthly * m);
+    const res = getContractPrice(house, m);
+    modalTotal.textContent = rub(res.total);
 
     if (ltcStartWrap) ltcStartWrap.style.display = "block";
   } else {
@@ -408,11 +457,12 @@ function openBooking(house) {
     if (ltcStartWrap) ltcStartWrap.style.display = "none";
   }
 
-  // <-- вот это важно
+  // правила поставщика
   setProviderRules(house.rental_provider);
 
   bookingForm?.reset?.();
 }
+
 
 
 function closeBooking() {
@@ -534,17 +584,50 @@ function loadDistricts() {
     allDistricts.map(d => `<option value="${d}">${d}</option>`).join("");
 }
 
-function getDynamicPrice(house, days) {
-  const base = Number(house.price_per_day) || 0;
-  const tiers = (house.price_tiers || [])
-    .filter(t => t.is_active)
-    .map(t => ({ min: Number(t.min_days) || 0, price: Number(t.price_per_day) || base }))
-    .sort((a, b) => b.min - a.min); // от большего min_days к меньшему
-
-  // берём самый крупный tier, который подходит под days
-  const hit = tiers.find(t => days >= t.min);
-  return hit ? hit.price : base;
+// === Хелперы для долгосрока ===
+function findTierByMinDays(house, minDays) {
+  return (house.price_tiers || []).find(
+    t => t.is_active && Number(t.min_days) === Number(minDays)
+  ) || null;
 }
+
+function getTierForMonths(house, months) {
+  const days = months * 30;
+  return findTierByMinDays(house, days); // 180 -> 6 мес, 360 -> 12 мес
+}
+
+function hasExactTierForMonths(house, months) {
+  const needDays = months * 30;
+  return (house.price_tiers || []).some(
+    t => t.is_active && Number(t.min_days) === Number(needDays)
+  );
+}
+
+// Возвращает цену для долгосрока с фолбэком на посуточную сетку:
+// - если есть точный tier → месячная = perDay*30
+// - если нет → считаем посуточно для (months*30) дней
+function getContractPrice(house, months) {
+  const days = months * 30;
+  const exactTier = getTierForMonths(house, months);
+  if (exactTier) {
+    const perDay = Number(exactTier.price_per_day) || 0;
+    return {
+      mode: "exact-tier",
+      perDay,
+      monthly: perDay * 30,
+      total: perDay * 30 * months
+    };
+  }
+  // фолбэк: посуточная логика для большого количества дней
+  const perDay = getDynamicPrice(house, days);
+  return {
+    mode: "daily-fallback",
+    perDay,
+    monthly: perDay * 30,
+    total: perDay * days // можно и monthly*months, это то же самое
+  };
+}
+
 
 
 /* ==== Rules modal helpers ==== */
