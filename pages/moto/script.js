@@ -387,6 +387,7 @@ function declineWord(n){
   if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return "дня";
   return "дней";
 }
+const declineDays = declineWord;
 
 /* Close modals */
 function closeBooking() {

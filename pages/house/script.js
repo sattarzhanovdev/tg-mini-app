@@ -517,9 +517,11 @@ function renderHouses(houses) {
                     if (rentMode === "daily") {
                       const days = (selectedStart && selectedEnd) ? nights(selectedStart, selectedEnd) : 1;
                       const pricePerDay = safeGetDynamicPrice(h, days);
+                      const total = pricePerDay * days;
+
                       return `
-                        <h4>${rubSafe(pricePerDay)}/день</h4>
-                        <p>${days} ${declineDays(days)}<br>Депозит: ${rubSafe(h.deposit || 0)}</p>
+                        <h4>${rubSafe(total)} за ${days} ${declineDays(days)}</h4>
+                        <p>(${rubSafe(pricePerDay)}/день)<br>Депозит: ${rubSafe(h.deposit || 0)}</p>
                       `;
                     } else {
                       const m = modeMonths();
@@ -583,6 +585,34 @@ function initSliders() {
   });
 }
 
+[startInput, endInput].forEach(inp => {
+  inp?.addEventListener("change", () => {
+    selectedStart = startInput?.value || null;
+    selectedEnd   = endInput?.value || null;
+
+    // если даты валидны — сразу перерисуем карточки с ИТОГО
+    if (selectedStart && selectedEnd && rentMode === "daily") {
+      renderHouses(
+        allHouses
+          .filter(h => hasTierForDays(h, 1)) // остаётся твоя логика отбора
+      );
+    }
+
+    // если открыта модалка — обновим сумму и диапазон
+    if (
+      bookingModal?.style?.display === "flex" &&
+      currentHouse &&
+      selectedStart && selectedEnd && rentMode === "daily"
+    ) {
+      const n = nights(selectedStart, selectedEnd);
+      const pricePerDay = safeGetDynamicPrice(currentHouse, n);
+      modalRange.textContent =
+        `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
+      modalTotal.textContent = rub(pricePerDay * n);
+    }
+  });
+});
+
 /* === Модалки === */
 function openBooking(house) {
   currentHouse = house;
@@ -596,8 +626,9 @@ function openBooking(house) {
 
   if (rentMode === "daily" && selectedStart && selectedEnd) {
     const n = nights(selectedStart, selectedEnd);
-    modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
-    const pricePerDay = getDynamicPrice(house, n);
+    modalRange.textContent =
+      `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
+    const pricePerDay = safeGetDynamicPrice(house, n); // <-- safe
     modalTotal.textContent = rub(pricePerDay * n);
     if (ltcStartWrap) ltcStartWrap.style.display = "none";
   } else if (rentMode !== "daily") {
