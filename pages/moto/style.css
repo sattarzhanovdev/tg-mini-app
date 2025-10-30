@@ -201,13 +201,20 @@ header img{
 }
 
 .category-picker .categories{
+  width: 100%;
   display: flex;
-  align-items: center;
-  gap: 2px;
+  align-items: stretch;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;            /* Firefox скрыть полосу */
 }
 
 .category-picker .categories .category{
-  width: 50%;
+  flex: 0 0 auto;                   /* не сжимается, скроллится по-горизонтали */
+  width: 140px;                     /* базовая ширина карточки */
   height: 60px;
   border-radius: 12px;
   border: 1px solid #E7E7E9;
@@ -217,8 +224,9 @@ header img{
   justify-content: center;
   flex-direction: column;
   gap: 4px;
+  scroll-snap-align: start;         /* прилипание по началу карточки */
+  cursor: pointer;
 }
-
 .category-picker .categories .category.active{
   border-radius: 12px;
   border: 1px solid #1B86FF;
@@ -1070,9 +1078,6 @@ footer .bottom__bar li a.active img {
     width: 90%;
   }
 
-  .category-picker .categories .category {
-    width: 48%;
-  }
 
   .city-selector, .sorting {
     flex-direction: column;
@@ -1080,6 +1085,13 @@ footer .bottom__bar li a.active img {
   }
 }
 
+
+
+@media (max-width: 430px){
+  .category-picker .categories .category{
+    width: 80px;                   /* компактнее на узких экранах */
+  }
+}
 
 
 /* === SUCCESS MODAL === */

@@ -511,6 +511,12 @@ bookingForm?.addEventListener("submit", async (e) => {
   }
 });
 
+document.querySelector(".close")?.addEventListener("click", () => {
+  bookingModal.style.display = "none";          // было "hidden"
+  document.body.style.overflow = "";            // было "flex"
+});
+
+
 closeSuccess?.addEventListener("click", () => {
   successModal.style.display = "none";
   document.body.style.overflow = "";
