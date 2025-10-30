@@ -321,14 +321,14 @@ function renderMotorcycles(motos) {
           </div>
 
           <div class="line"></div>
-          <<div class="price">
+          <div class="price">
             ${(() => {
               let pricePerDay = Number(m.price_per_day);
               let total = pricePerDay;
               let days = 1;
 
               if (selectedStart && selectedEnd) {
-                days = daysExclusiveNights(selectedStart, selectedEnd);
+                days = daysInclusive(selectedStart, selectedEnd);
                 pricePerDay = getDynamicPrice(m, days);
                 total = pricePerDay * days;
               }
@@ -503,3 +503,65 @@ function getDynamicPrice(moto, days) {
   // если нашли подходящий диапазон — возвращаем его цену
   return tier ? Number(tier.price_per_day) : Number(moto.price_per_day);
 }
+
+/* ==== Rules modal helpers (универсальные) ==== */
+function ensureRulesModal() {
+  if (document.getElementById("rulesModal")) return;
+  const html = `
+    <div class="modal" id="rulesModal" style="display:none;">
+      <div class="modal-content" style="max-width:640px;margin:0 auto;">
+        <span class="close rules-close">&times;</span>
+        <h3 style="margin:0 0 12px;">Правила аренды</h3>
+        <div class="rules-body" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <button type="button" class="btn rules-ok" style="margin-top:16px;">Понятно</button>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML("beforeend", html);
+
+  const rm = document.getElementById("rulesModal");
+  const close = () => { rm.style.display = "none"; document.body.style.overflow = ""; };
+  rm.querySelector(".rules-close").addEventListener("click", close);
+  rm.querySelector(".rules-ok").addEventListener("click", close);
+  rm.addEventListener("click", (e)=>{ if (e.target===rm) close(); });
+  window.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && rm.style.display==="flex") close(); });
+}
+
+function openRulesModal() {
+  ensureRulesModal();
+  const rm = document.getElementById("rulesModal");
+  rm.style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+function setProviderRules(provider) {
+  ensureRulesModal();
+  const box = document.querySelector("#rulesModal .rules-body");
+  const esc = (s) => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const name = provider?.name ? ` для <b>${esc(provider.name)}</b>` : "";
+  let terms = (provider?.terms ?? "").trim();
+  if (!terms) {
+    terms = "Правила аренды временно не указаны. Свяжитесь с поставщиком для уточнения условий.";
+  }
+  const htmlTerms = esc(terms).replace(/\n/g, "<br>");
+  const contacts = [
+    provider?.phone    ? `<li>Телефон: <b>${esc(provider.phone)}</b></li>`       : "",
+    provider?.telegram ? `<li>Telegram: <b>${esc(provider.telegram)}</b></li>`   : "",
+    provider?.email    ? `<li>Email: <b>${esc(provider.email)}</b></li>`         : "",
+  ].filter(Boolean).join("");
+
+  box.innerHTML = `
+    <p><b>Правила аренды${name}</b></p>
+    <div style="color:#333;line-height:1.45">${htmlTerms}</div>
+    ${contacts ? `<ul style="margin-top:12px;color:#555">${contacts}</ul>` : ""}
+    <p style="color:#99A2AD;margin-top:8px">*Информация предоставлена арендодателем.</p>
+  `;
+}
+
+/* Делегирование на клик по ссылке "правилами аренды" */
+document.addEventListener("click", (e) => {
+  const link = e.target.closest(".rules-link");
+  if (!link) return;
+  e.preventDefault();
+  setProviderRules(currentMoto?.rental_provider || null);
+  openRulesModal();
+});
