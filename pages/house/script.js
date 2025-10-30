@@ -66,6 +66,22 @@ const addMonths = (date, months) => {
   return d;
 };
 
+function getDynamicPrice(house, days) {
+  const base = Number(house.price_per_day) || 0;
+  const tiers = Array.isArray(house.price_tiers)
+    ? house.price_tiers
+        .filter(t => t && t.is_active)
+        .sort((a, b) => Number(a.min_days) - Number(b.min_days))
+    : [];
+
+  let price = base;
+  for (const t of tiers) {
+    const min = Number(t.min_days) || 0;
+    if (days >= min) price = Number(t.price_per_day) || price;
+  }
+  return price;
+}
+
 /* State */
 let allHouses = [];
 let allCategories = [];
@@ -96,11 +112,17 @@ async function fetchHouses() {
 }
 
 async function fetchBookings() {
-  const r = await fetch(`${API}/bookings/`);
-  const data = await r.json();
-  allBookings = (data?.results || []).filter(b =>
-    ["active", "pending", "confirmed"].includes(b.status)
-  );
+  try {
+    const r = await fetch(`${API}/bookings/`, { method: "GET" });
+    if (!r.ok) throw new Error(`Bookings HTTP ${r.status}`);
+    const data = await r.json();
+    allBookings = (data?.results || []).filter(b =>
+      ["active", "pending", "confirmed"].includes(String(b.status).toLowerCase())
+    );
+  } catch (err) {
+    console.error("fetchBookings error:", err);
+    allBookings = [];
+  }
 }
 
 /* Init */
@@ -180,26 +202,45 @@ function renderCategories() {
 /* Нажатие "Посмотреть" */
 showBtn?.addEventListener("click", async () => {
   if (rentMode !== "daily") {
-    await fetchBookings(); // просто на всякий случай
-    applyFilters();
+    try {
+      await fetchBookings();
+    } catch (e) {
+      /* уже залогировано внутри fetchBookings */
+    } finally {
+      showBtn.disabled = false;
+      showBtn.textContent = oldText;
+      try {
+        applyFilters();
+      } catch (e) {
+        console.error("applyFilters error:", e);
+      }
+    }
     return;
   }
 
   selectedStart = startInput.value;
-  selectedEnd = endInput.value;
+  selectedEnd   = endInput.value;
 
   if (!selectedStart || !selectedEnd) {
     alert("Пожалуйста, выберите обе даты аренды");
     return;
   }
 
+  // блокируем кнопку и показываем лоадер
   showBtn.disabled = true;
   const oldText = showBtn.textContent;
   showBtn.textContent = "Загрузка...";
-  await fetchBookings();
-  applyFilters();
-  showBtn.disabled = false;
-  showBtn.textContent = oldText;
+
+  try {
+    await fetchBookings();       // может кинуть — не страшно
+  } catch (e) {
+    /* уже залогировано внутри fetchBookings */
+  } finally {
+    // в любом случае возвращаем кнопку и перерисовываем список
+    applyFilters();
+    showBtn.disabled = false;
+    showBtn.textContent = oldText;
+  }
 });
 
 function isBlockedStatus(val) {
@@ -210,11 +251,19 @@ function isBlockedStatus(val) {
 }
 
 async function fetchBookings() {
-  const r = await fetch(`${API}/bookings/`);
-  const data = await r.json();
-  allBookings = data?.results || [];
+  try {
+    const r = await fetch(`${API}/bookings/`, { method: "GET" });
+    if (!r.ok) throw new Error(`Bookings HTTP ${r.status}`);
+    const data = await r.json();
+    allBookings = (data?.results || []).filter(b =>
+      ["active", "pending", "confirmed"].includes(String(b.status).toLowerCase())
+    );
+  } catch (err) {
+    console.error("fetchBookings error:", err);
+    // Не ломаем UI из-за сетевой ошибки
+    allBookings = [];
+  }
 }
-
 /* === Основная фильтрация === */
 function applyFilters() {
   // Посуточно — требуем обе даты
@@ -225,8 +274,6 @@ function applyFilters() {
       </p>`;
     return;
   }
-
-
 
   let list = allHouses.slice();
   list = list.filter(house => {
