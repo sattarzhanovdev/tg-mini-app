@@ -334,7 +334,7 @@ function renderMotorcycles(motos) {
               }
 
               return `
-                <h4>${rub(pricePerDay)}</h4>
+                <h4>${rub(total)}</h4>
                 <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(m.deposit || 0)}</p>
               `;
             })()}

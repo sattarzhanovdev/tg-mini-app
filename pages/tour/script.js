@@ -266,6 +266,7 @@ bookingForm?.addEventListener("submit", async (e) => {
     excursion: currentTour.id,
     start_date: selectedStart,
     telegram_id: user?.id || 102445,
+    total_price: 0,
     client_name: name,
     phone_number: phone,
     provider_terms_accepted: true,
