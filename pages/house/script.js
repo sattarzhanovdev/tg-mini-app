@@ -376,6 +376,10 @@ function applyFilters() {
   renderHouses(list);
 }
 
+function hasBasePrice(item) {
+  return Number(item?.price_per_day) > 0;
+}
+
 
 /* === Рендер карточек === */
 function renderHouses(houses) {
@@ -405,28 +409,34 @@ function renderHouses(houses) {
           ${h.district ? `<p style="font-size:14px;color:#6e6e6e;">Район: ${h.district?.name || h.district}</p>` : ""}
           ${(h.features?.length ? `<div class="goods">${h.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : "")}
           <div class="line"></div>
-          <div class="price">
-            ${(() => {
-              if (rentMode === "daily") {
-                const days = (selectedStart && selectedEnd) ? nights(selectedStart, selectedEnd) : 1;
-                const pricePerDay = getDynamicPrice(h, days);
-                return `
-                  <h4>${rub(pricePerDay)}/день</h4>
-                  <p>${days} ${declineDays(days)}<br>Депозит: ${rub(h.deposit || 0)}</p>
-                `;
-              } else {
-                const m = modeMonths(); // 6 или 12
-                const res = getContractPrice(h, m);
-                const hint = res.mode === "daily-fallback"
-                  ? `<br><span style="font-size:12px;color:#8a8a8a;">(по посуточной сетке)</span>`
-                  : "";
-                return `
-                  <h4>${rub(res.monthly)}/мес</h4>
-                  <p>Контракт на ${m} мес<br>Депозит: ${rub(h.deposit || 0)}${hint}</p>
-                `;
-              }
-            })()}
-          </div>
+
+          ${
+            hasBasePrice(h)
+              ? `<div class="price">
+                  ${(() => {
+                    if (rentMode === "daily") {
+                      const days = (selectedStart && selectedEnd) ? nights(selectedStart, selectedEnd) : 1;
+                      const pricePerDay = getDynamicPrice(h, days);
+                      return `
+                        <h4>${rub(pricePerDay)}/день</h4>
+                        <p>${days} ${declineDays(days)}<br>Депозит: ${rub(h.deposit || 0)}</p>
+                      `;
+                    } else {
+                      const m = modeMonths();
+                      const res = getContractPrice(h, m);
+                      const hint = res.mode === "daily-fallback"
+                        ? `<br><span style="font-size:12px;color:#8a8a8a;">(по посуточной сетке)</span>`
+                        : "";
+                      return `
+                        <h4>${rub(res.monthly)}/мес</h4>
+                        <p>Контракт на ${m} мес<br>Депозит: ${rub(h.deposit || 0)}${hint}</p>
+                      `;
+                    }
+                  })()}
+                </div>`
+              : ""  // если базовая цена 0 — не показываем блок цены вовсе
+          }
+
           <button class="openBooking" data-id="${h.id}">Забронировать</button>
         </div>
       </div>`;
