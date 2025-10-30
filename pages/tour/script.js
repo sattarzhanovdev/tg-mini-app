@@ -115,17 +115,23 @@ function renderCategories() {
 /* Нажатие "Посмотреть" */
 showBtn?.addEventListener("click", async () => {
   selectedStart = startInput.value;
-  if (!selectedStart) return alert("Выберите дату начала");
+  selectedEnd = null; // экскурсии считаем на 1 день
+
+  if (!selectedStart) {
+    alert("Выберите дату начала");
+    return;
+  }
 
   showBtn.disabled = true;
   const old = showBtn.textContent;
   showBtn.textContent = "Загрузка...";
+
   await fetchBookings();
   applyFilters();
+
   showBtn.disabled = false;
   showBtn.textContent = old;
 });
-
 /* Фильтрация и рендер */
 function applyFilters() {
   if (!selectedStart) {
@@ -181,19 +187,11 @@ function renderTours(tours) {
           <div class="line"></div>
           <div class="price">
             ${(() => {
-              let pricePerDay = Number(t.price_per_person);
-              let total = pricePerDay;
-              let days = 1;
-
-              if (selectedStart && selectedEnd) {
-                days = daysExclusiveNights(selectedStart, selectedEnd);
-                pricePerDay = getDynamicPrice(t, days);
-                total = pricePerDay * days;
-              }
-
+              const price = Number(t.price_per_person) || 0;
+              const dateStr = selectedStart ? fmtRu(toLocalDate(selectedStart)) : "—";
               return `
-                <h4>${rub(total)}</h4>
-                <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(t.deposit || 0)}</p>
+                <h4>${rub(price)}</h4>
+                <p>за человека · дата: ${dateStr}<br>${t.days} ${t.days > 4 ? 'дней' : "дня"}<br>Депозит: ${rub(t.deposit || 0)}</p>
               `;
             })()}
           </div>
@@ -213,6 +211,7 @@ function renderTours(tours) {
   });
 }
 
+
 /* Открытие модалки */
 function openBooking(tour) {
   currentTour = tour;
@@ -223,15 +222,18 @@ function openBooking(tour) {
   modalTitle.textContent = tour.title || "Экскурсия";
   modalDesc.textContent  = tour.description || "";
 
-  if (selectedStart && selectedEnd) {
-    const n = nights(selectedStart, selectedEnd);
-    modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))}${selectedEnd ? " — " + fmtRu(toLocalDate(selectedEnd)) : ""}`;
-    const pricePerPerson = getDynamicTourPrice(tour, n);
+  if (selectedStart) {
+    // экскурсия: показываем выбранную дату и цену за человека
+    modalRange.textContent = fmtRu(toLocalDate(selectedStart));
+    const pricePerPerson = getDynamicTourPrice(tour, 1);
     modalTotal.textContent = rub(pricePerPerson);
   } else {
     modalRange.textContent = "Даты не выбраны";
     modalTotal.textContent = "—";
   }
+
+  // подтягиваем правила поставщика (terms) для ссылки "правилами аренды"
+  setProviderRules(tour.rental_provider);
 
   bookingForm?.reset?.();
 }
@@ -404,6 +406,6 @@ document.addEventListener("click", (e) => {
   const link = e.target.closest(".rules-link");
   if (!link) return;
   e.preventDefault();
-  setProviderRules(currentMoto?.rental_provider || null);
+  setProviderRules(currentTour?.rental_provider || null);
   openRulesModal();
 });
