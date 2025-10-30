@@ -122,11 +122,32 @@
 
             <label class="checkbox" style="display:flex; gap:8px; align-items:center; margin-top:6px;">
               <input type="checkbox" id="agreeRules" />
-              <span>Я согласен с правилами аренды</span>
+              <span>
+                Я согласен с
+                <button type="button" class="rules-link">правилами аренды</button>
+              </span>
             </label>
-
             <button type="submit" class="btn">Забронировать</button>
           </form>
+        </div>
+      </div>
+
+      <div class="modal" id="rulesModal">
+        <div class="modal-content" style="max-width: 640px; margin: 0 auto;">
+          <span class="close rules-close">&times;</span>
+          <h3 style="margin-top: 0;">Правила аренды</h3>
+
+          <div class="rules-body" style="display:flex; flex-direction:column; gap:10px;">
+            <p><b>1. Общие условия.</b> Минимальный срок аренды — 1 сутки. Документы и залог требуются согласно условиям компании.</p>
+            <p><b>2. Оплата.</b> Аренда оплачивается авансом. Дополнительно могут взиматься: доставка, депозит, опции.</p>
+            <p><b>3. Депозит.</b> Возвращается после проверки авто/имущества при отсутствии нарушений и штрафов.</p>
+            <p><b>4. Использование.</b> Запрещены гонки, буксировка, передача управления третьим лицам без согласования.</p>
+            <p><b>5. Штрафы и повреждения.</b> Штрафы и ущерб оплачиваются арендатором согласно акту.</p>
+            <p><b>6. Возврат.</b> Возврат в оговорённое время. Просрочка тарифицируется как дополнительный период.</p>
+            <p style="color:#99A2AD;">*Это шаблон. Подставь сюда свои актуальные правила.</p>
+          </div>
+
+          <button type="button" class="btn rules-ok" style="margin-top:16px;">Понятно</button>
         </div>
       </div>
 

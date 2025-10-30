@@ -6,6 +6,9 @@ tg?.ready?.();
 tg?.expand?.();
 const user = tg?.initDataUnsafe?.user ?? null;
 
+/* API */
+const API = "https://rentareabackend.pythonanywhere.com/api/houses";
+
 /* DOM */
 const categoriesContainer = document.querySelector(".categories");
 const cardsContainer = document.querySelector(".cards");
@@ -33,6 +36,12 @@ const filterModal = document.getElementById("filterModal");
 const filterClose = filterModal?.querySelector(".close");
 const filterForm = document.getElementById("filterForm");
 
+/* Режимы аренды */
+const modeButtons = document.querySelectorAll(".rent-mode .mode");
+const datePickerBox = document.querySelector(".date-picker");
+const ltcStartWrap = document.querySelector(".ltc-start");
+const ltcStartInput = document.getElementById("ltc-start-date");
+
 /* Helpers */
 const dayMs = 24 * 60 * 60 * 1000;
 const toLocalDate = (iso) => new Date(iso + "T00:00:00");
@@ -49,8 +58,13 @@ const declineDays = (n) =>
   n % 10 === 1 && n % 100 !== 11 ? "день" :
   [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "дня" : "дней";
 
-/* API */
-const API = "https://rentareabackend.pythonanywhere.com/api/houses";
+const addMonths = (date, months) => {
+  const d = new Date(date.getTime());
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + months);
+  if (d.getDate() < day) d.setDate(0); // корректируем перепрыгивание
+  return d;
+};
 
 /* State */
 let allHouses = [];
@@ -60,10 +74,13 @@ let selectedCategory = null;
 let selectedStart = null;
 let selectedEnd = null;
 let currentHouse = null;
+let rentMode = "daily"; // 'daily' | '6m' | '12m'
 
 /* Фильтры */
 let priceFrom = null;
 let priceTo = null;
+
+const modeMonths = () => (rentMode === "6m" ? 6 : rentMode === "12m" ? 12 : 0);
 
 /* Fetch */
 async function fetchCategories() {
@@ -93,8 +110,37 @@ async function fetchBookings() {
   loadDistricts();
   cardsContainer.innerHTML =
     `<p style="text-align:center;color:#99A2AD;margin-top:40px;">
-      Пожалуйста, выберите даты аренды
+      Пожалуйста, выберите режим или даты аренды
     </p>`;
+
+  // Переключение режимов
+  modeButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      modeButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      rentMode = btn.dataset.mode;
+
+      const isDaily = rentMode === "daily";
+
+      if (isDaily) {
+        datePickerBox.classList.remove("disabled");
+      } else {
+        datePickerBox.classList.add("disabled");
+      }
+
+      if (ltcStartWrap) ltcStartWrap.style.display = isDaily ? "none" : "block";
+
+      // сбрасываем выбранные даты поиска при долгосроке
+      if (!isDaily) {
+        selectedStart = null;
+        selectedEnd = null;
+        if (startInput) startInput.value = "";
+        if (endInput) endInput.value = "";
+      }
+
+      applyFilters();
+    });
+  });
 })();
 
 /* Категории */
@@ -133,6 +179,12 @@ function renderCategories() {
 
 /* Нажатие "Посмотреть" */
 showBtn?.addEventListener("click", async () => {
+  if (rentMode !== "daily") {
+    await fetchBookings(); // просто на всякий случай
+    applyFilters();
+    return;
+  }
+
   selectedStart = startInput.value;
   selectedEnd = endInput.value;
 
@@ -152,8 +204,8 @@ showBtn?.addEventListener("click", async () => {
 
 /* === Основная фильтрация === */
 function applyFilters() {
-  // Проверяем, выбраны ли даты
-  if (!selectedStart || !selectedEnd) {
+  // для посуточной аренды требуем обе даты
+  if (rentMode === "daily" && (!selectedStart || !selectedEnd)) {
     cardsContainer.innerHTML = `
       <p style="text-align:center;color:#99A2AD;margin-top:40px;">
         Пожалуйста, выберите даты аренды
@@ -175,7 +227,7 @@ function applyFilters() {
 
   if (district) {
     list = list.filter(
-      h => (h.district || "").trim().toLowerCase() === district.trim().toLowerCase()
+      h => (h.district || "").toString().trim().toLowerCase() === district.trim().toLowerCase()
     );
   }
 
@@ -184,6 +236,7 @@ function applyFilters() {
       h => h.category_title.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
     );
   }
+
   // Фильтрация по цене — только если поля действительно заполнены
   const priceFromValue = document.getElementById("priceFrom")?.value.trim();
   const priceToValue = document.getElementById("priceTo")?.value.trim();
@@ -198,39 +251,38 @@ function applyFilters() {
     list = list.filter(h => Number(h.price_per_day) <= max);
   }
 
-  // --- Проверяем занятость по датам ---
-  const s = toLocalDate(selectedStart);
-  const e = toLocalDate(selectedEnd);
-  list = list.map(h => {
-    const conflicts = allBookings.some(
-      b =>
-        b.house === h.id &&
-        overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
-    );
-    return { ...h, __hasConflict: conflicts };
-  });
-  list = list.filter(h => !h.__hasConflict);
+  // --- Проверяем занятость по датам (только для посуточной) ---
+  if (rentMode === "daily") {
+    const s = toLocalDate(selectedStart);
+    const e = toLocalDate(selectedEnd);
+    list = list.map(h => {
+      const conflicts = allBookings.some(
+        b =>
+          b.house === h.id &&
+          overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date))
+      );
+      return { ...h, __hasConflict: conflicts };
+    });
+    list = list.filter(h => !h.__hasConflict);
+  }
 
   // --- Рендер ---
   if (!list.length) {
     cardsContainer.innerHTML = `
       <p style="text-align:center;color:#99A2AD;margin-top:40px;">
-        Нет доступных объектов на выбранные даты
+        Нет доступных объектов под выбранные условия
       </p>`;
     return;
   }
 
-  console.log("Осталось:", list.length);
   renderHouses(list);
 }
-
-
 
 /* === Рендер карточек === */
 function renderHouses(houses) {
   if (!houses.length) {
     cardsContainer.innerHTML =
-      "<p style='text-align:center;color:#99A2AD;margin-top:40px;'>Нет доступных объектов на выбранные даты</p>";
+      "<p style='text-align:center;color:#99A2AD;margin-top:40px;'>Нет доступных объектов под выбранные условия</p>";
     return;
   }
 
@@ -254,22 +306,28 @@ function renderHouses(houses) {
           ${h.district ? `<p style="font-size:14px;color:#6e6e6e;">Район: ${h.district?.name || h.district}</p>` : ""}
           ${(h.features?.length ? `<div class="goods">${h.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : "")}
           <div class="line"></div>
-          <<div class="price">
+          <div class="price">
             ${(() => {
-              let pricePerDay = Number(h.price_per_day);
-              let total = pricePerDay;
-              let days = 1;
+              if (rentMode === "daily") {
+                const days = (selectedStart && selectedEnd) ? nights(selectedStart, selectedEnd) : 1;
+                const pricePerDay = getDynamicPrice(h, days);
+                const total = pricePerDay * days;
+                return `
+                  <h4>${rub(total)}</h4>
+                  <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(h.deposit || 0)}</p>
+                `;
+              } else {
+                const m = modeMonths(); // 6 или 12
+                const contractDays = m * 30;                   // считаем месяц = 30 дней
+                const pricePerDay = getDynamicPrice(h, contractDays);
+                const monthly = pricePerDay * 30;
+                const total = monthly * m;
 
-              if (selectedStart && selectedEnd) {
-                days = daysExclusiveNights(selectedStart, selectedEnd);
-                pricePerDay = getDynamicPrice(h, days);
-                total = pricePerDay * days;
+                return `
+                  <h4>${rub(total)}</h4>
+                  <p>${rub(monthly)}/мес · ${m} мес<br>Депозит: ${rub(h.deposit || 0)}</p>
+                `;
               }
-
-              return `
-                <h4>${rub(total + h.deposit)}</h4>
-                <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(h.deposit || 0)}</p>
-              `;
             })()}
           </div>
           <button class="openBooking" data-id="${h.id}">Забронировать</button>
@@ -325,20 +383,37 @@ function openBooking(house) {
   document.body.style.overflow = "hidden";
 
   modalPhoto.src = house.images?.[0]?.image || "../../images/no_photo.png";
-  modalTitle.textContent = house.title || "Объект";
-  modalDesc.textContent = house.description || (house.area ? `${house.area} кв/м` : "");
+  const titleEl = modalTitle || document.querySelector(".car-title") || document.querySelector(".house-title");
+  if (titleEl) titleEl.textContent = house.title || "Объект";  modalDesc.textContent = house.description || (house.area ? `${house.area} кв/м` : "");
 
-  if (selectedStart && selectedEnd) {
+  if (rentMode === "daily" && selectedStart && selectedEnd) {
     const n = nights(selectedStart, selectedEnd);
     modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
     const pricePerDay = getDynamicPrice(house, n);
-    modalTotal.textContent = rub(pricePerDay * n);  } else {
+    modalTotal.textContent = rub(pricePerDay * n);
+    if (ltcStartWrap) ltcStartWrap.style.display = "none";
+  } else if (rentMode !== "daily") {
+    const m = modeMonths();
+    modalRange.textContent = `Контракт на ${m} мес`;
+
+    const contractDays = m * 30;
+    const pricePerDay = getDynamicPrice(house, contractDays);
+    const monthly = pricePerDay * 30;
+    modalTotal.textContent = rub(monthly * m);
+
+    if (ltcStartWrap) ltcStartWrap.style.display = "block";
+  } else {
     modalRange.textContent = "Даты не выбраны";
     modalTotal.textContent = "—";
+    if (ltcStartWrap) ltcStartWrap.style.display = "none";
   }
+
+  // <-- вот это важно
+  setProviderRules(house.rental_provider);
 
   bookingForm?.reset?.();
 }
+
 
 function closeBooking() {
   bookingModal.style.display = "none";
@@ -354,7 +429,23 @@ window.addEventListener("keydown", (e) => e.key === "Escape" && closeBooking());
 bookingForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!currentHouse) return alert("Выберите дом");
-  if (!selectedStart || !selectedEnd) return alert("Выберите даты");
+
+  let sDate = selectedStart;
+  let eDate = selectedEnd;
+
+  if (rentMode === "daily") {
+    if (!sDate || !eDate) return alert("Выберите даты");
+  } else {
+    // для долгосрока нужна только дата начала
+    const startVal = ltcStartInput?.value;
+    if (!startVal) return alert("Выберите дату начала контракта");
+    const s = toLocalDate(startVal);
+    const months = modeMonths();
+    const e = addMonths(s, months);
+    const pad = (x) => String(x).padStart(2, "0");
+    sDate = `${s.getFullYear()}-${pad(s.getMonth()+1)}-${pad(s.getDate())}`;
+    eDate = `${e.getFullYear()}-${pad(e.getMonth()+1)}-${pad(e.getDate())}`;
+  }
 
   const name = bookingForm.querySelector("input[placeholder='Ваше имя']").value.trim();
   const phone = bookingForm.querySelector("input[placeholder='Ваш номер телефона']").value.trim();
@@ -362,14 +453,16 @@ bookingForm?.addEventListener("submit", async (e) => {
 
   const payload = {
     house: currentHouse.id,
-    start_date: selectedStart,
-    end_date: selectedEnd,
+    start_date: sDate,
+    end_date: eDate,
     telegram_id: user?.id || 102445,
     client_name: name,
     phone_number: phone,
     provider_terms_accepted: true,
     service_terms_accepted: true,
     comment,
+    contract_type: rentMode,             // 'daily' | '6m' | '12m'
+    contract_months: modeMonths() || null
   };
 
   const btn = bookingForm.querySelector(".btn");
@@ -439,21 +532,84 @@ function loadDistricts() {
   select.innerHTML =
     '<option value="">Любой</option>' +
     allDistricts.map(d => `<option value="${d}">${d}</option>`).join("");
-  console.log("Доступные районы:", allDistricts);
 }
 
 function getDynamicPrice(house, days) {
-  if (!house.price_tiers || !house.price_tiers.length) {
-    return Number(house.price_per_day) || 0;
-  }
+  const base = Number(house.price_per_day) || 0;
+  const tiers = (house.price_tiers || [])
+    .filter(t => t.is_active)
+    .map(t => ({ min: Number(t.min_days) || 0, price: Number(t.price_per_day) || base }))
+    .sort((a, b) => b.min - a.min); // от большего min_days к меньшему
 
-  // ищем подходящий диапазон по дням
-  const tier = house.price_tiers.find(t => {
-    const min = Number(t.min_days) || 0;
-    const max = Number(t.max_days) || Infinity;
-    return days >= min && days <= max;
-  });
-
-  // если найден — возвращаем цену по этому диапазону
-  return tier ? Number(tier.price_per_day) : Number(house.price_per_day);
+  // берём самый крупный tier, который подходит под days
+  const hit = tiers.find(t => days >= t.min);
+  return hit ? hit.price : base;
 }
+
+
+/* ==== Rules modal helpers ==== */
+function ensureRulesModal() {
+  if (document.getElementById("rulesModal")) return;
+  const html = `
+    <div class="modal" id="rulesModal" style="display:none;">
+      <div class="modal-content" style="max-width:640px;margin:0 auto;">
+        <span class="close rules-close">&times;</span>
+        <h3 style="margin-top:0;">Правила аренды</h3>
+        <div class="rules-body" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <button type="button" class="btn rules-ok" style="margin-top:16px;">Понятно</button>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML("beforeend", html);
+
+  const rm = document.getElementById("rulesModal");
+  const close = () => {
+    rm.style.display = "none";
+    document.body.style.overflow = "";
+  };  
+  rm.querySelector(".rules-close").addEventListener("click", close);
+  rm.querySelector(".rules-ok").addEventListener("click", close);
+  rm.addEventListener("click", (e)=>{ if(e.target===rm) close(); });
+  window.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && rm.style.display==="flex") close(); });
+}
+
+function openRulesModal() {
+  ensureRulesModal();
+  const rm = document.getElementById("rulesModal");
+  rm.style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+// безопасная подстановка terms + контактов
+function setProviderRules(provider) {
+  ensureRulesModal();
+  const box = document.querySelector("#rulesModal .rules-body");
+  const name = provider?.name ? ` для <b>${provider.name}</b>` : "";
+  let terms = (provider?.terms ?? "").trim();
+  if (!terms) {
+    terms = "Правила аренды временно не указаны. Свяжитесь с поставщиком для уточнения условий.";
+  }
+  const esc = (s) => s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const htmlTerms = esc(terms).replace(/\n/g, "<br>");
+
+  const contacts = [
+    provider?.phone ? `<li>Телефон: <b>${provider.phone}</b></li>` : "",
+    provider?.telegram ? `<li>Telegram: <b>${provider.telegram}</b></li>` : "",
+    provider?.email ? `<li>Email: <b>${provider.email}</b></li>` : ""
+  ].filter(Boolean).join("");
+
+  box.innerHTML = `
+    <p><b>Правила аренды${name}</b></p>
+    <div style="color:#333;line-height:1.45">${htmlTerms}</div>
+    ${contacts ? `<ul style="margin-top:12px;color:#555">${contacts}</ul>` : ""}
+    <p style="color:#99A2AD;margin-top:8px">*Информация предоставлена арендодателем.</p>
+  `;
+}
+
+// Делегирование клика по «правилами аренды»
+document.addEventListener("click", (e) => {
+  const link = e.target.closest(".rules-link");
+  if (!link) return;
+  e.preventDefault();
+  setProviderRules(currentHouse?.rental_provider || null);
+  openRulesModal();
+});

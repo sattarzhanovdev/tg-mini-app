@@ -15,6 +15,13 @@
     <main>
       <h4 class="title">Недвижимость</h4>
 
+      <!-- Переключатель режима аренды -->
+      <div class="rent-mode">
+        <button type="button" class="mode active" data-mode="daily">Посуточно</button>
+        <button type="button" class="mode" data-mode="6m">6 месяцев</button>
+        <button type="button" class="mode" data-mode="12m">12 месяцев</button>
+      </div>
+
       <p class="filter">
         <img src="../../images/sliders.svg" alt="sliders">
         Настроить фильтр
@@ -70,6 +77,18 @@
             </div>
           </div>
 
+          <!-- Дата начала для 6/12 мес -->
+          <div class="ltc-start" style="display:none">
+            <label>Дата начала аренды (для 6/12 мес)</label>
+            <div class="input">
+              <img src="../../images/date.svg" alt="date">
+              <input type="date" id="ltc-start-date" />
+            </div>
+            <p class="ltc-hint" style="color:#99A2AD;font-size:13px;margin:6px 2px 0;">
+              Дата окончания рассчитывается автоматически по выбранному контракту.
+            </p>
+          </div>
+
           <form class="booking-form" id="bookingForm">
             <label>Имя</label>
             <div class="input">
@@ -88,6 +107,11 @@
               <img src="../../images/comment.svg" alt="comment">
               <input type="text" placeholder="Ваш комментарий">
             </div>
+
+            <label class="checkbox" style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+              <input type="checkbox" id="agreeRules" />
+              <span>Я согласен с <button type="button" class="rules-link">правилами аренды</button></span>
+            </label>
 
             <button type="submit" class="btn">Забронировать</button>
           </form>

@@ -192,7 +192,7 @@ function renderTours(tours) {
               }
 
               return `
-                <h4>${rub(total + t.deposit)}</h4>
+                <h4>${rub(total)}</h4>
                 <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(t.deposit || 0)}</p>
               `;
             })()}

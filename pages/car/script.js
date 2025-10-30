@@ -298,6 +298,10 @@ function renderCars(cars) {
             <li><img src="../../images/car_parameters/oil.svg"> ${car.oil_type || "—"}</li>
           </div>
 
+          <div class="goods">
+            ${car.features.map(item => `<li>${item.title}</li>`).join('')}
+          </div>
+
           <div class="line"></div>
           <div class="price">
             ${(() => {
@@ -312,7 +316,7 @@ function renderCars(cars) {
               }
 
               return `
-                <h4>${rub(total + car.deposit)}</h4>
+                <h4>${rub(total)}</h4>
                 <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(car.deposit || 0)}</p>
               `;
             })()}
@@ -375,13 +379,37 @@ function openBooking(car) {
   document.body.style.overflow = "hidden";
 
   modalPhoto.src = car.images?.[0]?.image || "../../images/no_photo.jpg";
-  modalTitle.textContent = car.title;
+  modalTitle.textContent = car.title || "Объект";
   modalDesc.textContent  = car.description || "";
 
+  // --- блок разбиения платежей (если нет — создадим) ---
+  let breakdown = bookingModal.querySelector(".payment-breakdown");
+  if (!breakdown) {
+    const cardEl = bookingModal.querySelector(".card");
+    breakdown = document.createElement("div");
+    breakdown.className = "payment-breakdown";
+    breakdown.innerHTML = `
+      <div class="line"></div>
+      <p>Аренда: <span class="rent-amount">—</span></p>
+      <p>Доставка: <span class="delivery-amount">—</span></p>
+      <p>Депозит: <span class="deposit-amount">—</span></p>
+      <div class="line"></div>
+      <p><b>Итого к оплате:</b> <span class="total-amount">—</span></p>
+    `;
+    // вставим перед кнопкой "Забронировать"
+    cardEl?.parentNode?.insertBefore(breakdown, cardEl.nextSibling);
+  }
+
+  // ссылки на элементы разбиения
+  const rangeEl    = bookingModal.querySelector(".date-pick-result") || modalRange;
+  const rentEl     = bookingModal.querySelector(".rent-amount");
+  const delivEl    = bookingModal.querySelector(".delivery-amount");
+  const depEl      = bookingModal.querySelector(".deposit-amount");
+  const totalEl    = bookingModal.querySelector(".total-amount");
+
+  // --- select доставки ---
   const deliverySelect = bookingModal.querySelector(".delivery");
   deliverySelect.innerHTML = "";
-
-  // добавляем варианты доставки
   if (car.delivery_zones?.length) {
     const options = car.delivery_zones
       .filter(z => z.is_active)
@@ -392,68 +420,43 @@ function openBooking(car) {
     deliverySelect.innerHTML = `<option value="0">Без доставки</option>`;
   }
 
-  // расчёт цен
+  const deposit = Number(car.deposit || 0);
+
+  // --- пересчёт ---
   const updateTotal = () => {
     if (!selectedStart || !selectedEnd) {
-      modalRange.textContent = "Даты не выбраны";
+      rangeEl.textContent  = "Даты не выбраны";
+      rentEl.textContent   = "—";
+      delivEl.textContent  = "—";
+      depEl.textContent    = rub(deposit);
+      totalEl.textContent  = "—";
       modalTotal.textContent = "—";
       return;
     }
 
-    const days = daysExclusiveNights(selectedStart, selectedEnd);
-    const basePrice = getDynamicPrice(car, days);
-    const rentTotal = basePrice * days;
-    const delivery = parseFloat(deliverySelect.value || 0);
-    const grandTotal = rentTotal + delivery;
+    const days         = daysExclusiveNights(selectedStart, selectedEnd);
+    const pricePerDay  = getDynamicPrice(car, days);
+    const rentTotal    = pricePerDay * days;
+    const deliveryFee  = Number(deliverySelect.value || 0);
+    const grandTotal   = rentTotal + deliveryFee + deposit;
 
-    modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${days} ${declineDays(days)}`;
-    modalTotal.textContent = `${rub(grandTotal)} (включая доставку ${rub(delivery)})`;
+    rangeEl.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${days} ${declineDays(days)}`;
+    rentEl.textContent  = `${rub(rentTotal)} (${rub(pricePerDay)}/день × ${days})`;
+    delivEl.textContent = rub(deliveryFee);
+    depEl.textContent   = rub(deposit);
+    totalEl.textContent = rub(grandTotal);
+
+    // если у тебя где-то используется старое поле .price — тоже обновим
+    modalTotal.textContent = rub(grandTotal);
   };
 
-  // при изменении зоны пересчитываем сумму
+  // реакция на смену зоны доставки
   deliverySelect.addEventListener("change", updateTotal);
 
   // первичный расчёт
   updateTotal();
 
   bookingForm?.reset?.();
-}
-
-
-
-bookingClose?.addEventListener("click", () => {
-  bookingModal.style.display = "none";
-  document.body.style.overflow = "";
-});
-bookingModal?.addEventListener("click", (e) => {
-  if (e.target === bookingModal) {
-    bookingModal.style.display = "none";
-    document.body.style.overflow = "";
-  }
-});
-
-const modalStartInput = document.getElementById("modal-start");
-const modalEndInput   = document.getElementById("modal-end");
-
-modalStartInput?.addEventListener("change", updateModalDates);
-modalEndInput?.addEventListener("change", updateModalDates);
-
-function updateModalDates() {
-  const sVal = modalStartInput.value;
-  const eVal = modalEndInput.value;
-  if (sVal && eVal) {
-    const n = daysExclusiveNights(sVal, eVal);
-    modalRange.textContent = `${fmtRu(toLocalDate(sVal))} — ${fmtRu(
-      toLocalDate(eVal)
-    )} · ${n} ${declineDays(n)}`;
-    const pricePerDay = getDynamicPrice(currentCar, n);
-    modalPrice.textContent = rub(pricePerDay * n);
-    selectedStart = sVal;
-    selectedEnd = eVal;
-  } else {
-    modalRange.textContent = "Выберите даты";
-    modalPrice.textContent = "—";
-  }
 }
 
 /* Submit booking */
@@ -591,3 +594,98 @@ function getDynamicPrice(car, days) {
   // иначе — стандартная цена
   return Number(car.price_per_day);
 }
+
+
+// === Правила аренды (модалка) ===
+const rulesLink   = document.querySelector(".rules-link");
+const rulesModal  = document.getElementById("rulesModal");
+const rulesClose  = rulesModal?.querySelector(".rules-close");
+const rulesOkBtn  = rulesModal?.querySelector(".rules-ok");
+
+function ensureRulesModal() {
+  let rulesModal = document.getElementById("rulesModal");
+  if (!rulesModal) {
+    const modalHtml = `
+      <div class="modal" id="rulesModal">
+        <div class="modal-content" style="max-width:640px;margin:0 auto;">
+          <span class="close rules-close">&times;</span>
+          <h3 style="margin-top:0;">Правила аренды</h3>
+          <div class="rules-body" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <button type="button" class="btn rules-ok" style="margin-top:16px;">Понятно</button>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+    // навешиваем обработчики один раз
+    const rm = document.getElementById("rulesModal");
+    const closeBtn = rm.querySelector(".rules-close");
+    const okBtn = rm.querySelector(".rules-ok");
+    const close = () => { rm.style.display = "flex" ? rm.style.display = "none" : null; document.body.style.overflow = ""; };
+    closeBtn.addEventListener("click", close);
+    okBtn.addEventListener("click", close);
+    rm.addEventListener("click", (e)=>{ if(e.target===rm) close(); });
+    window.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && rm.style.display==="flex") close(); });
+  }
+}
+
+function openRulesModal() {
+  const rm = document.getElementById("rulesModal");
+  rm.style.display = "flex";
+  document.body.style.overflow = "hidden";
+}
+
+// безопасная вставка текста правил (переводим \n в <br>)
+function setProviderRules(provider) {
+  ensureRulesModal();
+  const box = document.querySelector("#rulesModal .rules-body");
+  const name = provider?.name ? ` для <b>${provider.name}</b>` : "";
+  let terms = (provider?.terms ?? "").trim();
+
+  if (!terms) {
+    terms = "Правила аренды временно не указаны. Свяжитесь с поставщиком для уточнения условий.";
+  }
+
+  // экранируем html, кроме переносов строк
+  const esc = (s) => s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const htmlTerms = esc(terms).replace(/\n/g, "<br>");
+
+  const contacts = [
+    provider?.phone ? `<li>Телефон: <b>${provider.phone}</b></li>` : "",
+    provider?.telegram ? `<li>Telegram: <b>${provider.telegram}</b></li>` : "",
+    provider?.email ? `<li>Email: <b>${provider.email}</b></li>` : ""
+  ].filter(Boolean).join("");
+
+  box.innerHTML = `
+    <p><b>Правила аренды${name}</b></p>
+    <div style="color:#333;line-height:1.4">${htmlTerms}</div>
+    ${contacts ? `<ul style="margin-top:12px;color:#555">${contacts}</ul>` : ""}
+    <p style="color:#99A2AD;margin-top:8px">*Информация предоставлена арендодателем.</p>
+  `;
+}
+
+
+function closeRulesModal(){
+  rulesModal.style.display = "none";
+  document.body.style.overflow = "";
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".rules-link");
+  if (btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    setProviderRules(currentCar?.rental_provider || null);
+    openRulesModal();
+  }
+});rulesClose?.addEventListener("click", closeRulesModal);
+rulesOkBtn?.addEventListener("click", closeRulesModal);
+
+// клик по фону — закрыть
+rulesModal?.addEventListener("click", (e)=>{
+  if (e.target === rulesModal) closeRulesModal();
+});
+
+// ESC — закрыть
+window.addEventListener("keydown", (e)=>{
+  if (e.key === "Escape" && rulesModal?.style.display === "flex") closeRulesModal();
+});
