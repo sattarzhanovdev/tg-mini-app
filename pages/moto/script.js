@@ -412,13 +412,12 @@ bookingForm?.addEventListener("submit", async (e) => {
   const phone   = bookingForm.querySelector("input[placeholder='Ваш номер телефона']")?.value.trim();
   const comment = bookingForm.querySelector("input[placeholder='Ваш комментарий']")?.value.trim();
 
-  if (!user?.id) return alert("Откройте Mini App в Telegram!");
 
   const payload = {
     motorcycle: currentMoto.id,     // фикс
     start_date: selectedStart,
     end_date: selectedEnd,
-    telegram_id: user.id,
+    telegram_id: user?.id || 112345,
     client_name: name,
     phone_number: phone,
     provider_terms_accepted: true,
