@@ -276,6 +276,16 @@ function applyFilters() {
   }
 
   let list = allHouses.slice();
+  if (rentMode === "daily") {
+    list = list.filter(h => hasTierForDays(h, 1));
+  }
+
+  // long-term: только если есть точный tier (180/360)
+  if (rentMode === "6m" || rentMode === "12m") {
+    const m = modeMonths(); // 6 или 12
+    list = list.filter(h => hasExactTierForMonths(h, m));
+  }
+
   list = list.filter(house => {
     const hasBlockedBooking = (allBookings || []).some(
       b => b.house === house.id && isBlockedStatus(b.status || b.status_title)
@@ -380,6 +390,96 @@ function hasBasePrice(item) {
   return Number(item?.price_per_day) > 0;
 }
 
+// --- утилы для корректной работы цен ---
+const num = (v) => {
+  if (v == null) return NaN;
+  if (typeof v === 'number') return v;
+  if (typeof v !== 'string') return NaN;
+  // убираем пробелы, валюту и все, что не цифры/точка/знак минус
+  const cleaned = v.replace(/[^\d.\-]/g, '');
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : NaN;
+};
+
+// берём первое валидное (>0) числовое поле из списка
+const pickPrice = (...vals) => {
+  for (const v of vals) {
+    const n = num(v);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+};
+
+// Определяем, есть ли что показать в блоке цены
+function hasBasePrice(h) {
+  if (rentMode === "daily") return hasTierForDays(h, 1);
+  const m = modeMonths();
+  if (m) return hasExactTierForMonths(h, m); // строго 180/360
+  return false;
+}
+
+// Безопасный форматтер (если NaN — покажем тире)
+function rubSafe(v) {
+  const n = num(v);
+  if (!Number.isFinite(n)) return '—';
+  return rub(n); // твой существующий форматтер
+}
+
+// Если у тебя getDynamicPrice / getContractPrice иногда возвращают NaN,
+// оберни их:
+function safeGetDynamicPrice(h, days) {
+  const p = getDynamicPrice?.(h, days);
+  const n = num(p);
+  if (Number.isFinite(n)) return n;
+
+  // фолбэк: берём ближайшее поле с дневной ценой
+  return (
+    pickPrice(h.price_per_day, h.daily_price, h.base_price, h.price) ??
+    0
+  );
+}
+
+function safeGetContractPrice(h, m) {
+  const res = getContractPrice?.(h, m);
+  if (res && Number.isFinite(num(res.monthly))) return res;
+
+  // фолбэк: если нет месячной — считаем от дневной (условно 30 дней)
+  const daily = pickPrice(
+    h.price_per_day,
+    h.daily_price,
+    h.base_price,
+    h.price
+  );
+  if (daily != null) {
+    return { monthly: daily * 30, mode: 'daily-fallback' };
+  }
+
+  // если вообще ничего нет
+  return { monthly: NaN, mode: 'unknown' };
+}
+
+function hasTierForDays(house, d) {
+  return (house.price_tiers || []).some(
+    t => t && t.is_active && Number(t.min_days) === Number(d)
+  );
+}
+
+function pickTierPricePerDay(house, days) {
+  const tiers = Array.isArray(house.price_tiers)
+    ? house.price_tiers
+        .filter(t => t && t.is_active)
+        .sort((a, b) => Number(a.min_days) - Number(b.min_days))
+    : [];
+  // найдём «последний подходящий» по min_days
+  let price = null;
+  for (const t of tiers) {
+    const min = Number(t.min_days) || 0;
+    if (days >= min) price = Number(t.price_per_day) || price;
+  }
+  return price; // может быть null, если ни один не подошёл
+}
+
+
 
 /* === Рендер карточек === */
 function renderHouses(houses) {
@@ -416,25 +516,25 @@ function renderHouses(houses) {
                   ${(() => {
                     if (rentMode === "daily") {
                       const days = (selectedStart && selectedEnd) ? nights(selectedStart, selectedEnd) : 1;
-                      const pricePerDay = getDynamicPrice(h, days);
+                      const pricePerDay = safeGetDynamicPrice(h, days);
                       return `
-                        <h4>${rub(pricePerDay)}/день</h4>
-                        <p>${days} ${declineDays(days)}<br>Депозит: ${rub(h.deposit || 0)}</p>
+                        <h4>${rubSafe(pricePerDay)}/день</h4>
+                        <p>${days} ${declineDays(days)}<br>Депозит: ${rubSafe(h.deposit || 0)}</p>
                       `;
                     } else {
                       const m = modeMonths();
-                      const res = getContractPrice(h, m);
+                      const res = safeGetContractPrice(h, m);
                       const hint = res.mode === "daily-fallback"
                         ? `<br><span style="font-size:12px;color:#8a8a8a;">(по посуточной сетке)</span>`
                         : "";
                       return `
-                        <h4>${rub(res.monthly)}/мес</h4>
-                        <p>Контракт на ${m} мес<br>Депозит: ${rub(h.deposit || 0)}${hint}</p>
+                        <h4>${rubSafe(res.monthly)}/мес</h4>
+                        <p>Контракт на ${m} мес<br>Депозит: ${rubSafe(h.deposit || 0)}${hint}</p>
                       `;
                     }
                   })()}
                 </div>`
-              : ""  // если базовая цена 0 — не показываем блок цены вовсе
+              : "" // если вообще не нашли ни одного ценового поля — прячем
           }
 
           <button class="openBooking" data-id="${h.id}">Забронировать</button>
@@ -649,42 +749,40 @@ function findTierByMinDays(house, minDays) {
 }
 
 function getTierForMonths(house, months) {
-  const days = months * 30;
-  return findTierByMinDays(house, days); // 180 -> 6 мес, 360 -> 12 мес
+  const days = months * 30; // 6 -> 180, 12 -> 360
+  return (house.price_tiers || []).find(
+    t => t.is_active && Number(t.min_days) === Number(days)
+  ) || null;
 }
 
 function hasExactTierForMonths(house, months) {
-  const needDays = months * 30;
-  return (house.price_tiers || []).some(
-    t => t.is_active && Number(t.min_days) === Number(needDays)
-  );
+  return !!getTierForMonths(house, months);
 }
 
 // Возвращает цену для долгосрока с фолбэком на посуточную сетку:
 // - если есть точный tier → месячная = perDay*30
 // - если нет → считаем посуточно для (months*30) дней
 function getContractPrice(house, months) {
-  const days = months * 30;
-  const exactTier = getTierForMonths(house, months);
-  if (exactTier) {
-    const perDay = Number(exactTier.price_per_day) || 0;
-    return {
-      mode: "exact-tier",
-      perDay,
-      monthly: perDay * 30,
-      total: perDay * 30 * months
-    };
+  const tier = getTierForMonths(house, months); // exact 180/360
+  if (!tier) {
+    return { mode: "no-tier", perDay: 0, monthly: NaN, total: NaN };
   }
-  // фолбэк: посуточная логика для большого количества дней
-  const perDay = getDynamicPrice(house, days);
-  return {
-    mode: "daily-fallback",
-    perDay,
-    monthly: perDay * 30,
-    total: perDay * days // можно и monthly*months, это то же самое
-  };
+  const perDay = Number(tier.price_per_day) || 0;
+  const monthly = perDay * 30;        // фикс: месяц = 30 дней
+  const total   = monthly * months;   // общая сумма за контракт
+  return { mode: "exact-tier", perDay, monthly, total };
 }
 
+function safeGetContractPrice(house, months) {
+  const exact = getTierForMonths(house, months);
+  if (exact) {
+    const perDay = Number(exact.price_per_day) || 0;
+    return { mode: "exact-tier", perDay, monthly: perDay * 30, total: perDay * 30 * months };
+  }
+  // сюда обычно не попадём, т.к. в фильтре уже отсекли
+  const perDay = getDynamicPrice(house, months * 30);
+  return { mode: "daily-fallback", perDay, monthly: perDay * 30, total: perDay * 30 * months };
+}
 
 
 /* ==== Rules modal helpers ==== */
