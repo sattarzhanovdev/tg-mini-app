@@ -316,44 +316,36 @@ function applyFilters() {
 }
 
 
-function mountCarousels() {
-  document.querySelectorAll(".card-slider").forEach(wrap => {
-    const track  = wrap.querySelector(".track");
-    const slides = Array.from(track.querySelectorAll(".slide"));
-    if (!track || !slides.length) return;
+function initSliders() {
+  document.querySelectorAll(".card-slider").forEach(slider => {
+    const slides = slider.querySelector(".slides");
+    const imgs = slides.querySelectorAll("img");
+    let current = 0;
 
-    // 1) Принудительно грузим картинки (без lazy)
-    slides.forEach(sl => {
-      const img = sl.querySelector("img");
-      if (img) { img.loading = "eager"; img.decoding = "sync"; }
+    const prev = slider.querySelector(".prev");
+    const next = slider.querySelector(".next");
+
+    function show(i) {
+      if (i < 0) current = imgs.length - 1;
+      else if (i >= imgs.length) current = 0;
+      else current = i;
+      slides.style.transform = `translateX(-${current * 100}%)`;
+    }
+
+    next?.addEventListener("click", () => show(current + 1));
+    prev?.addEventListener("click", () => show(current - 1));
+
+    let startX = 0;
+    slides.addEventListener("touchstart", e => (startX = e.touches[0].clientX));
+    slides.addEventListener("touchend", e => {
+      const diff = e.changedTouches[0].clientX - startX;
+      if (diff > 50) show(current - 1);
+      if (diff < -50) show(current + 1);
     });
-
-    // 2) Фиксируем ширины, чтобы transform работал предсказуемо
-    const W = () => wrap.clientWidth;
-    const setWidths = () => {
-      slides.forEach(s => s.style.width = W() + "px");
-      track.style.width = (slides.length * W()) + "px";
-      track.style.transform = `translate3d(${-idx * W()}px,0,0)`;
-    };
-
-    let idx = 0;
-    track.style.transition = "transform .25s ease";
-    setWidths();
-    window.addEventListener("resize", setWidths);
-
-    // 3) Блокируем любые свайпы/скролл трека
-    ["wheel","scroll","touchstart","touchmove","touchend","pointerdown","pointermove"]
-      .forEach(ev => track.addEventListener(ev, e => e.preventDefault(), { passive:false }));
-
-    // 4) Кнопки листают по одному экрану
-    const go = (n) => {
-      idx = Math.max(0, Math.min(slides.length - 1, idx + n));
-      track.style.transform = `translate3d(${-idx * W()}px,0,0)`;
-    };
-    wrap.querySelector(".prev")?.addEventListener("click", () => go(-1));
-    wrap.querySelector(".next")?.addEventListener("click", () => go(1));
   });
 }
+
+
 
 
 
@@ -366,22 +358,17 @@ function renderMotorcycles(motos) {
   }
 
   cardsContainer.innerHTML = motos.map((m) => {
-    const images = (m.images || []).map(x => x?.image).filter(Boolean);
-    const slides = images.length ? images : ["../../images/no_photo.png"];
+    const images = (m.images?.length ? m.images : [{ image: "../../images/no_photo.png" }])
+      .map(img => `<img src="${img.image}" alt="${m.title}">`)
+      .join("");    const slides = images.length ? images : ["../../images/no_photo.png"];
 
     return `
       <div class="card" data-card="${m.id}">
         <div class="card-slider">
-          ${slides.length > 1 ? `<button class="prev" aria-label="prev">‹</button>` : ""}
-          <div class="track">
-            ${slides.map(src => `
-              <div class="slide">
-                <img src="${src}" alt="${m.title}" loading="lazy">
-              </div>
-            `).join("")}
-          </div>
-          ${slides.length > 1 ? `<button class="next" aria-label="next">›</button>` : ""}
+          <div class="slides">${images}</div>
+          ${m.images?.length > 1 ? `<button class="prev">‹</button><button class="next">›</button>` : ""}
         </div>
+
 
         <div class="info">
           <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -420,7 +407,7 @@ function renderMotorcycles(motos) {
   }).join("");
 
   // инициализируем карусели ПОСЛЕ вставки разметки
-  mountCarousels();
+  initSliders();
 
   document.querySelectorAll(".openBooking").forEach((btn) =>
     btn.addEventListener("click", () => {
