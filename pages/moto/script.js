@@ -50,18 +50,25 @@ const comment = bookingForm.querySelector("input[placeholder='Ваш комме�
 
 /* Helpers */
 const dayMs = 24*60*60*1000;
-const toLocalDate = (iso) => {
-  const [y,m,d] = iso.split("-").map(Number);
-  return new Date(y, m-1, d); // локальная полночь, без TZ-скачков
-};
+const toLocalDate = (iso) => { const [y,m,d]=iso.split("-").map(Number); return new Date(y, m-1, d); };
+
 const fmtRu = (d) => d.toLocaleDateString("ru-RU", { day:"2-digit", month:"short" });
 const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} ฿`;
-const overlaps = (aStart, aEnd, bStart, bEnd) => (aStart <= bEnd) && (aEnd >= bStart);
+const overlaps = (aStart, aEnd, bStart, bEnd) => (aStart < bEnd) && (aEnd > bStart);
 const daysInclusive = (a,b) => {
   const s = toLocalDate(a), e = toLocalDate(b);
   const diff = Math.ceil((e - s) / dayMs) + 1;
   return Math.max(1, diff);
 };
+
+
+function rentalDays(startISO, endISO) {
+  const s = toLocalDate(startISO);
+  const e = toLocalDate(endISO);
+  const diff = Math.ceil((e - s) / dayMs);   // 22→23 = 1; 22→22 = 0
+  return Math.max(1, diff);                  // минимум 1 сутки
+}
+
 
 /* API */
 const API = "https://rentareabackend.pythonanywhere.com/api/motorcycles";
