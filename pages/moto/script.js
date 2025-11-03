@@ -322,28 +322,39 @@ function mountCarousels() {
     const slides = Array.from(track.querySelectorAll(".slide"));
     if (!track || !slides.length) return;
 
-    // выставляем ширины (чтобы transform сдвигал «страницы»)
+    // 1) Принудительно грузим картинки (без lazy)
+    slides.forEach(sl => {
+      const img = sl.querySelector("img");
+      if (img) { img.loading = "eager"; img.decoding = "sync"; }
+    });
+
+    // 2) Фиксируем ширины, чтобы transform работал предсказуемо
     const W = () => wrap.clientWidth;
+    const setWidths = () => {
+      slides.forEach(s => s.style.width = W() + "px");
+      track.style.width = (slides.length * W()) + "px";
+      track.style.transform = `translate3d(${-idx * W()}px,0,0)`;
+    };
+
     let idx = 0;
-    const update = () => { track.style.transform = `translateX(${-idx * W()}px)`; };
+    track.style.transition = "transform .25s ease";
+    setWidths();
+    window.addEventListener("resize", setWidths);
 
-    // не даём ничему прокручиваться/скроллиться
+    // 3) Блокируем любые свайпы/скролл трека
     ["wheel","scroll","touchstart","touchmove","touchend","pointerdown","pointermove"]
-      .forEach(ev => track.addEventListener(ev, e => e.preventDefault(), { passive: false }));
+      .forEach(ev => track.addEventListener(ev, e => e.preventDefault(), { passive:false }));
 
-    // кнопки
-    wrap.querySelector(".prev")?.addEventListener("click", () => {
-      idx = Math.max(0, idx - 1); update();
-    });
-    wrap.querySelector(".next")?.addEventListener("click", () => {
-      idx = Math.min(slides.length - 1, idx + 1); update();
-    });
-
-    // при ресайзе держим корректную позицию
-    window.addEventListener("resize", update);
-    update();
+    // 4) Кнопки листают по одному экрану
+    const go = (n) => {
+      idx = Math.max(0, Math.min(slides.length - 1, idx + n));
+      track.style.transform = `translate3d(${-idx * W()}px,0,0)`;
+    };
+    wrap.querySelector(".prev")?.addEventListener("click", () => go(-1));
+    wrap.querySelector(".next")?.addEventListener("click", () => go(1));
   });
 }
+
 
 
 
