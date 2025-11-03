@@ -107,6 +107,15 @@
               <input type="text" placeholder="Ваш комментарий">
             </div>
 
+            <label>Доставка</label>
+            <div class="input">
+              <img src="../../images/map.svg" alt="delivery">
+              <select id="deliveryType" style="border:0;background:transparent;width:100%;outline:none;">
+                <option value="pickup">Самовывоз</option>
+                <option value="delivery">Доставка (укажите адрес в комментарии)</option>
+              </select>
+            </div>
+
             <label class="checkbox" style="display:flex; gap:8px; align-items:center; margin-top:6px;">
               <input type="checkbox" id="agreeRules" />
               <span>Я согласен с <button type="button" class="rules-link">правилами аренды</button></span>

@@ -44,13 +44,24 @@ const filterTransInput = document.getElementById("filterTransmission");
 const priceFromInput   = document.getElementById("priceFrom");
 const priceToInput     = document.getElementById("priceTo");
 
+const deliveryType = document.getElementById("deliveryType")?.value || "pickup";
+const comment = bookingForm.querySelector("input[placeholder='Ваш комментарий']")?.value.trim();
+
+
 /* Helpers */
 const dayMs = 24*60*60*1000;
-const toLocalDate = (iso) => new Date(iso + "T00:00:00");
+const toLocalDate = (iso) => {
+  const [y,m,d] = iso.split("-").map(Number);
+  return new Date(y, m-1, d); // локальная полночь, без TZ-скачков
+};
 const fmtRu = (d) => d.toLocaleDateString("ru-RU", { day:"2-digit", month:"short" });
 const rub = (n) => `${Number(n || 0).toLocaleString("ru-RU")} ฿`;
 const overlaps = (aStart, aEnd, bStart, bEnd) => (aStart <= bEnd) && (aEnd >= bStart);
-const daysInclusive = (a,b) => Math.max(1, Math.round((toLocalDate(b)-toLocalDate(a))/dayMs) + 1);
+const daysInclusive = (a,b) => {
+  const s = toLocalDate(a), e = toLocalDate(b);
+  const diff = Math.ceil((e - s) / dayMs) + 1;
+  return Math.max(1, diff);
+};
 
 /* API */
 const API = "https://rentareabackend.pythonanywhere.com/api/motorcycles";
@@ -292,6 +303,50 @@ function applyFilters() {
   renderMotorcycles(list);
 }
 
+
+function mountCarousels() {
+  document.querySelectorAll(".card-slider").forEach(wrap => {
+    const track = wrap.querySelector(".track");
+    if (!track) return;                 // защита, чтобы не падало
+
+    const step = () => wrap.clientWidth;
+
+    // кнопки
+    wrap.querySelector(".prev")?.addEventListener("click", () => {
+      track.scrollBy({ left: -step(), behavior: "smooth" });
+    });
+    wrap.querySelector(".next")?.addEventListener("click", () => {
+      track.scrollBy({ left:  step(), behavior: "smooth" });
+    });
+
+    // свайп
+    let sx=null, sy=null;
+    track.addEventListener("touchstart",(e)=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; },{passive:true});
+    track.addEventListener("touchmove",(e)=>{
+      if (sx===null) return;
+      const dx=Math.abs(e.touches[0].clientX-sx), dy=Math.abs(e.touches[0].clientY-sy);
+      if (dy>dx) sx=null; // вертикальный скролл — отдаём странице
+    },{passive:true});
+    track.addEventListener("touchend",(e)=>{
+      if (sx==null) return;
+      const dx = e.changedTouches[0].clientX - sx;
+      if (Math.abs(dx)>30) track.scrollBy({ left: dx<0? step(): -step(), behavior:"smooth" });
+      sx=null;
+    });
+
+    // не растягивать сильно «мелкие» фото — делаем их contain
+    track.querySelectorAll("img").forEach(img=>{
+      const applyFit=()=> {
+        if (img.naturalWidth < 800 || img.naturalHeight < 600) {
+          img.style.objectFit = "contain";
+          img.style.background = "#f5f5f5";
+        }
+      };
+      if (img.complete) applyFit(); else img.onload = applyFit;
+    });
+  });
+}
+
 /* Render */
 function renderMotorcycles(motos) {
   if (!motos.length) {
@@ -300,9 +355,23 @@ function renderMotorcycles(motos) {
   }
 
   cardsContainer.innerHTML = motos.map((m) => {
+    const images = (m.images || []).map(x => x?.image).filter(Boolean);
+    const slides = images.length ? images : ["../../images/no_photo.png"];
+
     return `
-      <div class="card">
-        <img src="${m.images?.[0]?.image || "../../images/no_photo.png"}" alt="${m.title}" class="photo_moto">
+      <div class="card" data-card="${m.id}">
+        <div class="card-slider">
+          ${slides.length > 1 ? `<button class="prev" aria-label="prev">‹</button>` : ""}
+          <div class="track">
+            ${slides.map(src => `
+              <div class="slide">
+                <img src="${src}" alt="${m.title}" loading="lazy">
+              </div>
+            `).join("")}
+          </div>
+          ${slides.length > 1 ? `<button class="next" aria-label="next">›</button>` : ""}
+        </div>
+
         <div class="info">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <h4>${m.title}</h4>
@@ -310,7 +379,7 @@ function renderMotorcycles(motos) {
           </div>
 
           <div style="display:flex;gap:10px;overflow-x:auto;">
-            <li><img src="../../images/car_parameters/motor.svg" alt="motor"> ${m.engine_volume || "—"}L</li>
+            <li><img src="../../images/car_parameters/motor.svg" alt="motor"> ${m.engine_volume || "—"} CC</li>
             <li><img src="../../images/car_parameters/settings.svg" alt="settings"> ${m.transmission || "—"}</li>
             <li><img src="../../images/car_parameters/road.svg" alt="road"> ${m.mileage || "—"} km</li>
             <li><img src="../../images/car_parameters/oil.svg" alt="oil"> ${m.oil_type || "—"}</li>
@@ -322,21 +391,15 @@ function renderMotorcycles(motos) {
 
           <div class="line"></div>
           <div class="price">
-            ${(() => {
-              let pricePerDay = Number(m.price_per_day);
-              let total = pricePerDay;
-              let days = 1;
-
+            ${(function(){
+              let days = 1, pricePerDay = Number(m.price_per_day) || 0, total = pricePerDay;
               if (selectedStart && selectedEnd) {
                 days = daysInclusive(selectedStart, selectedEnd);
                 pricePerDay = getDynamicPrice(m, days);
                 total = pricePerDay * days;
               }
-
-              return `
-                <h4>${rub(total)}</h4>
-                <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(m.deposit || 0)}</p>
-              `;
+              return `<h4>${rub(total)}</h4>
+                      <p>${rub(pricePerDay)}/день · ${days} ${declineDays(days)}<br>Депозит: ${rub(m.deposit || 0)}</p>`;
             })()}
           </div>
 
@@ -344,6 +407,9 @@ function renderMotorcycles(motos) {
         </div>
       </div>`;
   }).join("");
+
+  // инициализируем карусели ПОСЛЕ вставки разметки
+  mountCarousels();
 
   document.querySelectorAll(".openBooking").forEach((btn) =>
     btn.addEventListener("click", () => {
@@ -353,6 +419,10 @@ function renderMotorcycles(motos) {
     })
   );
 }
+
+
+
+
 
 /* Booking modal open */
 function openBookingForMoto(moto) {
@@ -365,6 +435,7 @@ function openBookingForMoto(moto) {
   if (modalGear)   modalGear.textContent  = moto.transmission || "—";
   if (modalMileage)modalMileage.textContent= (moto.mileage ? `${moto.mileage} km` : "—");
   if (modalOil)    modalOil.textContent   = moto.oil_type || "—";
+  if (modalEngine) modalEngine.textContent = (moto.engine_volume ? `${moto.engine_volume} CC` : "—");
 
   if (selectedStart && selectedEnd) {
     const n = daysInclusive(selectedStart, selectedEnd);
@@ -414,7 +485,7 @@ bookingForm?.addEventListener("submit", async (e) => {
 
 
   const payload = {
-    motorcycle: currentMoto.id,     // фикс
+    motorcycle: currentMoto.id,
     start_date: selectedStart,
     end_date: selectedEnd,
     telegram_id: user?.id || 112345,
@@ -422,7 +493,7 @@ bookingForm?.addEventListener("submit", async (e) => {
     phone_number: phone,
     provider_terms_accepted: true,
     service_terms_accepted: true,
-    comment,
+    comment: `[delivery:${deliveryType}] ${comment || ""}`.trim(),
   };
 
   const btn = bookingForm.querySelector(".btn");
@@ -488,20 +559,26 @@ filterForm?.addEventListener("submit", (e) => {
 
 
 /* === Расчёт динамической цены в зависимости от количества дней === */
+
+// берём «лучшую» ступень (если не отсортированы)
+// берём тариф с наибольшим min_days, который <= days
 function getDynamicPrice(moto, days) {
-  if (!moto.price_tiers || !moto.price_tiers.length) {
-    return Number(moto.price_per_day) || 0;
-  }
+  const base = Number(moto.price_per_day) || 0;
+  const tiers = (Array.isArray(moto.price_tiers) ? moto.price_tiers : [])
+    .filter(t => t && t.is_active)
+    .sort((a, b) => Number(a.min_days) - Number(b.min_days)); // по возрастанию
 
-  // ищем подходящий диапазон по количеству дней
-  const tier = moto.price_tiers.find(t => {
+  let perDay = base;
+  for (const t of tiers) {
     const min = Number(t.min_days) || 0;
-    const max = t.max_days ? Number(t.max_days) : Infinity;
-    return days >= min && days <= max;
-  });
-
-  // если нашли подходящий диапазон — возвращаем его цену
-  return tier ? Number(tier.price_per_day) : Number(moto.price_per_day);
+    if (days >= min) {
+      const p = Number(t.price_per_day);
+      if (!Number.isNaN(p)) perDay = p; // обновляем на более выгодный
+    } else {
+      break; // дальше только больше min_days — можно выйти
+    }
+  }
+  return perDay;
 }
 
 /* ==== Rules modal helpers (универсальные) ==== */
