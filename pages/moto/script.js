@@ -58,7 +58,7 @@ const overlaps = (aStart, aEnd, bStart, bEnd) => (aStart < bEnd) && (aEnd > bSta
 const daysInclusive = (a,b) => {
   const s = toLocalDate(a), e = toLocalDate(b);
   const diff = Math.ceil((e - s) / dayMs) + 1;
-  return Math.max(1, diff);
+  return rentalDays(a, b);
 };
 
 
@@ -401,7 +401,7 @@ function renderMotorcycles(motos) {
             ${(function(){
               let days = 1, pricePerDay = Number(m.price_per_day) || 0, total = pricePerDay;
               if (selectedStart && selectedEnd) {
-                days = daysInclusive(selectedStart, selectedEnd);
+                days = rentalDays(selectedStart, selectedEnd);
                 pricePerDay = getDynamicPrice(m, days);
                 total = pricePerDay * days;
               }
@@ -445,7 +445,7 @@ function openBookingForMoto(moto) {
   if (modalEngine) modalEngine.textContent = (moto.engine_volume ? `${moto.engine_volume} CC` : "—");
 
   if (selectedStart && selectedEnd) {
-    const n = daysInclusive(selectedStart, selectedEnd);
+    const n = rentalDays(selectedStart, selectedEnd);
     modalRange.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${n} ${declineWord(n)}`;
     const pricePerDay = getDynamicPrice(moto, n);
     modalTotal.textContent = rub(pricePerDay * n);
