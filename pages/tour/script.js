@@ -6,6 +6,11 @@ tg?.ready?.();
 tg?.expand?.();
 const user = tg?.initDataUnsafe?.user ?? null;
 
+if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
+  tg.swipeBehavior.disableVertical();
+  console.log("🔒 Vertical swipe disabled");
+}
+
 /* DOM */
 const categoriesContainer = document.querySelector(".categories");
 const cardsContainer = document.querySelector(".cards");

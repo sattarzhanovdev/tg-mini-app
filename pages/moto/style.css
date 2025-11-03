@@ -1008,43 +1008,37 @@ footer .bottom__bar li a.active img {
   }
 }
 
-.card-slider { position: relative; width: 100%; border-radius: 12px; overflow: hidden; }
+.card-slider{position:relative;width:100%;border-radius:12px;overflow:hidden;}
 .card-slider .track{
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
+  display:flex;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  scroll-snap-stop:always;            /* не проскальзывает */
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;      /* анти-bounce */
+  scroll-padding:0 1px;               /* safari snap fix */
+  touch-action:pan-y;                  /* вертикальный скролл — странице */
 }
-.card-slider .track::-webkit-scrollbar{ display:none; }
+.card-slider .track::-webkit-scrollbar{display:none;}
 
 .card-slider .slide{
-  flex: 0 0 100%;
-  aspect-ratio: 16/10;         /* стабильная высота */
-  scroll-snap-align: start;
+  flex:0 0 100%;
+  aspect-ratio:16/10;                 /* фикс. высота, нет прыжков при загрузке */
+  scroll-snap-align:start;
 }
 .card-slider .slide img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;           /* по умолчанию красиво обрезаем */
-  border-radius: 12px;
+  width:100%;height:100%;
+  object-fit:cover;                    /* по умолчанию cover */
+  border-radius:12px;
 }
-
 .card-slider button{
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(0,0,0,.45);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 34px; height: 34px;
-  font-size: 20px;
-  cursor: pointer;
-  z-index: 2;
+  position:absolute;top:50%;transform:translateY(-50%);
+  background:rgba(0,0,0,.45);color:#fff;border:none;border-radius:50%;
+  width:34px;height:34px;font-size:20px;cursor:pointer;z-index:2;
 }
-.card-slider .prev{ left: 10px; }
-.card-slider .next{ right: 10px; }
+.card-slider .prev{left:10px;}
+.card-slider .next{right:10px;}
 
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }

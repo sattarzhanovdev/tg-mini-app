@@ -6,6 +6,11 @@ tg?.ready?.();
 tg?.expand?.();
 const user = tg?.initDataUnsafe?.user ?? null;
 
+if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
+  tg.swipeBehavior.disableVertical();
+  console.log("🔒 Vertical swipe disabled");
+}
+
 /* API */
 const API = "https://rentareabackend.pythonanywhere.com/api/houses";
 

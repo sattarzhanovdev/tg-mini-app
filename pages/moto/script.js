@@ -5,6 +5,11 @@ const tg = window.Telegram?.WebApp;
 tg?.ready?.(); tg?.expand?.();
 const user = tg?.initDataUnsafe?.user ?? null;
 
+if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
+  tg.swipeBehavior.disableVertical();
+  console.log("🔒 Vertical swipe disabled");
+}
+
 /* DOM */
 const categoriesContainer = document.querySelector(".categories");
 const cardsContainer      = document.querySelector(".cards");
@@ -314,45 +319,68 @@ function applyFilters() {
 function mountCarousels() {
   document.querySelectorAll(".card-slider").forEach(wrap => {
     const track = wrap.querySelector(".track");
-    if (!track) return;                 // защита, чтобы не падало
+    if (!track) return;
 
-    const step = () => wrap.clientWidth;
+    const slideW = () => wrap.clientWidth;
+
+    // --- нормализация положения к ближайшему слайду
+    let snapTimer = null;
+    const snapToNearest = () => {
+      const w = slideW();
+      const target = Math.round(track.scrollLeft / w) * w;
+      track.scrollTo({ left: target, behavior: "smooth" });
+    };
+    const scheduleSnap = () => {
+      if (snapTimer) clearTimeout(snapTimer);
+      snapTimer = setTimeout(snapToNearest, 90); // ~scrollend polyfill
+    };
 
     // кнопки
     wrap.querySelector(".prev")?.addEventListener("click", () => {
-      track.scrollBy({ left: -step(), behavior: "smooth" });
+      const w = slideW();
+      const target = Math.floor((track.scrollLeft - 1) / w) * w;
+      track.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+      scheduleSnap();
     });
     wrap.querySelector(".next")?.addEventListener("click", () => {
-      track.scrollBy({ left:  step(), behavior: "smooth" });
+      const w = slideW();
+      const target = Math.ceil((track.scrollLeft + 1) / w) * w;
+      track.scrollTo({ left: target, behavior: "smooth" });
+      scheduleSnap();
     });
 
-    // свайп
+    // свайп: горизонтальный — наш, вертикальный — странице
     let sx=null, sy=null;
-    track.addEventListener("touchstart",(e)=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; },{passive:true});
+    track.addEventListener("touchstart",(e)=>{
+      sx=e.touches[0].clientX; sy=e.touches[0].clientY;
+    },{passive:true});
     track.addEventListener("touchmove",(e)=>{
       if (sx===null) return;
       const dx=Math.abs(e.touches[0].clientX-sx), dy=Math.abs(e.touches[0].clientY-sy);
-      if (dy>dx) sx=null; // вертикальный скролл — отдаём странице
+      if (dy>dx) sx=null; // отдаём вертикаль странице
     },{passive:true});
-    track.addEventListener("touchend",(e)=>{
-      if (sx==null) return;
-      const dx = e.changedTouches[0].clientX - sx;
-      if (Math.abs(dx)>30) track.scrollBy({ left: dx<0? step(): -step(), behavior:"smooth" });
-      sx=null;
-    });
+    track.addEventListener("touchend",()=>{ if(sx!==null) scheduleSnap(); sx=null; },{passive:true});
 
-    // не растягивать сильно «мелкие» фото — делаем их contain
+    // когда пользователь листает колесом/перетаскивает — тоже нормализуем
+    track.addEventListener("scroll", scheduleSnap, { passive: true });
+
+    // ресайз: пересчитать позицию, чтобы не встать «между»
+    const onResize = () => snapToNearest();
+    window.addEventListener("resize", onResize);
+
+    // аккурат для маленьких изображений — не растягивать
     track.querySelectorAll("img").forEach(img=>{
-      const applyFit=()=> {
+      const fit = () => {
         if (img.naturalWidth < 800 || img.naturalHeight < 600) {
           img.style.objectFit = "contain";
           img.style.background = "#f5f5f5";
         }
       };
-      if (img.complete) applyFit(); else img.onload = applyFit;
+      if (img.complete) fit(); else img.onload = fit;
     });
   });
 }
+
 
 /* Render */
 function renderMotorcycles(motos) {
