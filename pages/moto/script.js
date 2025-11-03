@@ -318,68 +318,33 @@ function applyFilters() {
 
 function mountCarousels() {
   document.querySelectorAll(".card-slider").forEach(wrap => {
-    const track = wrap.querySelector(".track");
-    if (!track) return;
+    const track  = wrap.querySelector(".track");
+    const slides = Array.from(track.querySelectorAll(".slide"));
+    if (!track || !slides.length) return;
 
-    const slideW = () => wrap.clientWidth;
+    // выставляем ширины (чтобы transform сдвигал «страницы»)
+    const W = () => wrap.clientWidth;
+    let idx = 0;
+    const update = () => { track.style.transform = `translateX(${-idx * W()}px)`; };
 
-    // --- нормализация положения к ближайшему слайду
-    let snapTimer = null;
-    const snapToNearest = () => {
-      const w = slideW();
-      const target = Math.round(track.scrollLeft / w) * w;
-      track.scrollTo({ left: target, behavior: "smooth" });
-    };
-    const scheduleSnap = () => {
-      if (snapTimer) clearTimeout(snapTimer);
-      snapTimer = setTimeout(snapToNearest, 90); // ~scrollend polyfill
-    };
+    // не даём ничему прокручиваться/скроллиться
+    ["wheel","scroll","touchstart","touchmove","touchend","pointerdown","pointermove"]
+      .forEach(ev => track.addEventListener(ev, e => e.preventDefault(), { passive: false }));
 
     // кнопки
     wrap.querySelector(".prev")?.addEventListener("click", () => {
-      const w = slideW();
-      const target = Math.floor((track.scrollLeft - 1) / w) * w;
-      track.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
-      scheduleSnap();
+      idx = Math.max(0, idx - 1); update();
     });
     wrap.querySelector(".next")?.addEventListener("click", () => {
-      const w = slideW();
-      const target = Math.ceil((track.scrollLeft + 1) / w) * w;
-      track.scrollTo({ left: target, behavior: "smooth" });
-      scheduleSnap();
+      idx = Math.min(slides.length - 1, idx + 1); update();
     });
 
-    // свайп: горизонтальный — наш, вертикальный — странице
-    let sx=null, sy=null;
-    track.addEventListener("touchstart",(e)=>{
-      sx=e.touches[0].clientX; sy=e.touches[0].clientY;
-    },{passive:true});
-    track.addEventListener("touchmove",(e)=>{
-      if (sx===null) return;
-      const dx=Math.abs(e.touches[0].clientX-sx), dy=Math.abs(e.touches[0].clientY-sy);
-      if (dy>dx) sx=null; // отдаём вертикаль странице
-    },{passive:true});
-    track.addEventListener("touchend",()=>{ if(sx!==null) scheduleSnap(); sx=null; },{passive:true});
-
-    // когда пользователь листает колесом/перетаскивает — тоже нормализуем
-    track.addEventListener("scroll", scheduleSnap, { passive: true });
-
-    // ресайз: пересчитать позицию, чтобы не встать «между»
-    const onResize = () => snapToNearest();
-    window.addEventListener("resize", onResize);
-
-    // аккурат для маленьких изображений — не растягивать
-    track.querySelectorAll("img").forEach(img=>{
-      const fit = () => {
-        if (img.naturalWidth < 800 || img.naturalHeight < 600) {
-          img.style.objectFit = "contain";
-          img.style.background = "#f5f5f5";
-        }
-      };
-      if (img.complete) fit(); else img.onload = fit;
-    });
+    // при ресайзе держим корректную позицию
+    window.addEventListener("resize", update);
+    update();
   });
 }
+
 
 
 /* Render */

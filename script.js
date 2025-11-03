@@ -7,6 +7,11 @@ const tg = window.Telegram?.WebApp;
 tg?.ready?.();
 tg?.expand?.();
 
+if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
+  tg.swipeBehavior.disableVertical();
+  console.log("🔒 Vertical swipe disabled");
+}
+
 const user = tg?.initDataUnsafe?.user ?? null;
 
 const nameElement = document.getElementById("user-name");
