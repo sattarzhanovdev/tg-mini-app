@@ -174,7 +174,7 @@ function renderCategories(){
   categoriesContainer.innerHTML = allCategories.map(c => `
     <div class="category" data-category="${c.title}">
       <img src="${c.icon}" alt="${c.title}">
-      <p>${c.title}</p>
+      <p>${LANG === 'en' ? c.title.split('/')[1] : c.title.split('/')[0]}</p>
     </div>
   `).join("");
   const els = document.querySelectorAll(".category");

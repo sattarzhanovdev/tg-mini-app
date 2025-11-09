@@ -142,6 +142,7 @@ langSelect.addEventListener("change", () => {
   localStorage.setItem("rent_lang", LANG);
   applyI18n();
   applyFilters();
+  renderCategories()
 });
 applyI18n();
 
@@ -318,7 +319,7 @@ function renderCategories() {
   categoriesContainer.innerHTML = allCategories.map(c => `
     <div class="category" data-category="${c.name}">
       <img src="${c.icon}" alt="${c.name}">
-      <p>${c.name}</p>
+      <p>${LANG === 'en' ? c.name.split('/')[1] : c.name.split('/')[0]}</p>
     </div>`).join("");
 
   const catElems = document.querySelectorAll(".category");
