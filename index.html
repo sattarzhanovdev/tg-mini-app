@@ -3,35 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Telegram Mini App</title>
+  <title data-i18n="title">Telegram Mini App</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="./style.css">
+  <style>
+    .lang-switch{position:fixed;top:10px;right:12px;z-index:1100;display:flex;gap:6px;align-items:center;
+                 background:#fff;border-radius:10px;padding:6px 10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .lang-switch select{border:none;outline:none;background:transparent;font-weight:600}
+  </style>
 </head>
 <body>
+  <!-- Переключатель языка -->
+  <div class="lang-switch">
+    <img src="./images/nav/map.svg" width="14" height="14" alt="">
+    <select id="langSelect" aria-label="Language">
+      <option value="ru">RU</option>
+      <option value="en">EN</option>
+    </select>
+  </div>
+
   <div class="logo">
     <img src="./images/logo.svg" alt="logo">
   </div>
+
   <header>
     <div class="left">
-      <!-- <h4 id="user-name"></h4> -->
-      <select class="picker-city"></select>
+      <select class="picker-city" id="cityPicker"></select>
     </div>
-    <!-- <img id="photo-profile"
-         src="https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=612x612&w=0&k=20&c=dhV2p1JwmloBTOaGAtaA3AW1KSnjsdMt7-U_3EZElZ0="
-         alt="profile"> -->
   </header>
 
   <main>
     <div class="choices">
-      <!-- <h4>Основное</h4> -->
-
       <div class="categories">
         <div class="big" onclick="window.location.href = './pages/car/car.html'">
           <div class="left">
             <img src="./images/car.svg" alt="car">
             <div class="text">
-              <h4>Автомобили</h4>
-              <p>От эконом до премиум</p>
+              <h4 data-i18n="cat_cars_title">Автомобили</h4>
+              <p data-i18n="cat_cars_desc">От эконом до премиум</p>
             </div>
           </div>
           <div class="right">
@@ -43,16 +52,16 @@
           <div class="card" onclick="window.location.href = './pages/moto/moto.html'">
             <img src="./images/moto.svg" alt="moto">
             <div class="text">
-              <h4>Мотоциклы</h4>
-              <p>Для ярких впечатлений и манёвренности в городе</p>
+              <h4 data-i18n="cat_moto_title">Мотоциклы</h4>
+              <p data-i18n="cat_moto_desc">Для ярких впечатлений и манёвренности в городе</p>
             </div>
           </div>
 
           <div class="card" onclick="window.location.href = './pages/house/house.html'">
             <img src="./images/house.svg" alt="house">
             <div class="text">
-              <h4>Недвижимость</h4>
-              <p>От уютных студий до просторных вилл</p>
+              <h4 data-i18n="cat_house_title">Недвижимость</h4>
+              <p data-i18n="cat_house_desc">От уютных студий до просторных вилл</p>
             </div>
           </div>
         </div>
@@ -61,8 +70,8 @@
           <div class="left">
             <img src="./images/map.svg" alt="map">
             <div class="text">
-              <h4>Экскурсии</h4>
-              <p>Незабываемые маршруты от местных гидов</p>
+              <h4 data-i18n="cat_tour_title">Экскурсии</h4>
+              <p data-i18n="cat_tour_desc">Незабываемые маршруты от местных гидов</p>
             </div>
           </div>
           <div class="right">
@@ -72,82 +81,17 @@
       </div>
     </div>
 
-    <!-- <div class="new">
-      <h4>Новые предложения</h4>
-      <p>Ознакомьтесь с последними новыми предложениями от нашей команды</p> -->
-
-      <!-- <div class="choices__btns">
-        <button class="active">Автомобили</button>
-        <button>Мотоциклы</button>
-        <button>Недвижимость</button>
-        <button>Экскурсии</button>
-      </div> -->
-
-      <!-- <div class="cards" id="new-cards"> -->
-        <!-- Карточки будут подгружаться динамически -->
-      <!-- </div>
-    </div> -->
-
     <div class="aboutUs">
-      <h2>О нас</h2>
-      <p>
-        Привет! Мы — ваш надёжный помощник в аренде.<br><br>
-
-        Знаем, как сложно бывает в незнакомом городе: долгие поиски, сомнения в надёжности, непонятные условия.<br><br>
-
-        Поэтому мы сделали всё просто:<br>
-        · Собрали лучшие локальные компании по аренде авто, мото, жилья и организации экскурсий.<br>
-        · Проверили их отзывы и репутацию.<br>
-        · Объединили в одном приложении, чтобы вы могли выбрать всё для поездки за считанные минуты.<br><br>
-
-        Как это работает?<br>
-        · Сравнивайте варианты — все предложения собраны в одном месте.<br>
-        · Выбирайте подходящее — с помощью удобных фильтров и фиксированных цен.<br>
-        · Бронируйте прямо в приложении — быстро и без лишних звонков.<br><br>
-
-        Наша цель — чтобы вы чувствовали себя уверенно в любой поездке.<br>
-        Арендуйте с нами — быстро, безопасно и без переплат.<br><br>
-
-        Для связи со службой поддержки по любым вопросам — @RentAreas
+      <h2 data-i18n="about_title">О нас</h2>
+      <p data-i18n="about_body">
+        Привет! Мы — ваш надёжный помощник в аренде...
+      </p>
+      <p style="margin-top:8px">
+        <span data-i18n="support_prefix">Для связи со службой поддержки по любым вопросам —</span>
+        <b>@RentAreas</b>
       </p>
     </div>
-
   </main>
-
-  <!-- <footer>
-    <ul class="bottom__bar">
-      <li>
-        <a href="#" class="active">
-          <img src="./images/nav/home.svg" alt="home">
-          Главное
-        </a>
-      </li>
-      <li>
-        <a href="#" onclick="window.location.href = './pages/car/car.html'">
-          <img src="./images/nav/car.svg" alt="car">
-          Авто
-        </a>
-      </li>
-      <li>
-        <a href="#" onclick="window.location.href = './pages/house/house.html'">
-          <img src="./images/nav/building.svg" alt="building">
-          Недвижимость
-        </a>
-      </li>
-      <li>
-        <a href="#" onclick="window.location.href = './pages/moto/moto.html'">
-          <img src="./images/nav/moto.svg" alt="moto">
-          Мото
-        </a>
-      </li>
-      <li>
-        <a href="#" onclick="window.location.href = './pages/tour/tour.html'">
-          <img src="./images/nav/map.svg" alt="map">
-          Экскурсии
-        </a>
-      </li>
-    </ul>
-  </footer> -->
 
   <script src="./script.js"></script>
 </body>

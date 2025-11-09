@@ -6,220 +6,183 @@
 const tg = window.Telegram?.WebApp;
 tg?.ready?.();
 tg?.expand?.();
-
 if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
   tg.swipeBehavior.disableVertical();
-  console.log("🔒 Vertical swipe disabled");
 }
-
 const user = tg?.initDataUnsafe?.user ?? null;
 
-const nameElement = document.getElementById("user-name");
-const photoElement = document.getElementById("photo-profile");
-
-// if (user) {
-//   nameElement.textContent = `Здравствуйте, ${user.first_name || "гость"}!`;
-//   photoElement.src =
-//     user.photo_url ||
-//     "https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=612x612&w=0&k=20&c=dhV2p1JwmloBTOaGAtaA3AW1KSnjsdMt7-U_3EZElZ0=";
-// } else {
-//   nameElement.textContent = "Здравствуйте, гость!";
-//   photoElement.src =
-//     "https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=612x612&w=0&k=20&c=dhV2p1JwmloBTOaGAtaA3AW1KSnjsdMt7-U_3EZElZ0=";
-// }
-
 /* ==============================
-   Навигация внизу
+   i18n (RU/EN)
    ============================== */
-const navLinks = document.querySelectorAll("footer .bottom__bar li a");
-navLinks.forEach(link => {
-  link.addEventListener("click", e => {
-    e.preventDefault();
-    navLinks.forEach(l => l.classList.remove("active"));
-    link.classList.add("active");
-  });
-});
+const I18N = {
+  ru: {
+    title: "Telegram Mini App",
 
-/* ==============================
-   Новые предложения — пример загрузки с API
-   ============================== */
-const cardsContainer = document.getElementById("new-cards");
-const API_BASE = "https://rentareabackend.pythonanywhere.com/api";
+    // Категории
+    cat_cars_title: "Автомобили",
+    cat_cars_desc: "От эконом до премиум",
+    cat_moto_title: "Мотоциклы",
+    cat_moto_desc: "Для ярких впечатлений и манёвренности в городе",
+    cat_house_title: "Недвижимость",
+    cat_house_desc: "От уютных студий до просторных вилл",
+    cat_tour_title: "Экскурсии",
+    cat_tour_desc: "Незабываемые маршруты от местных гидов",
 
-function rub(n) {
-  return `${Number(n || 0).toLocaleString("ru-RU")} ฿`;
+    // О нас
+    about_title: "О нас",
+    about_body:
+      "Привет! Мы — ваш надёжный помощник в аренде.\n\n" +
+      "Знаем, как сложно бывает в незнакомом городе: долгие поиски, сомнения в надёжности, непонятные условия.\n\n" +
+      "Поэтому мы сделали всё просто:\n" +
+      "· Собрали лучшие локальные компании по аренде авто, мото, жилья и организации экскурсий.\n" +
+      "· Проверили их отзывы и репутацию.\n" +
+      "· Объединили в одном приложении, чтобы вы могли выбрать всё для поездки за считанные минуты.\n\n" +
+      "Как это работает?\n" +
+      "· Сравнивайте варианты — все предложения собраны в одном месте.\n" +
+      "· Выбирайте подходящее — с помощью удобных фильтров и фиксированных цен.\n" +
+      "· Бронируйте прямо в приложении — быстро и без лишних звонков.\n\n" +
+      "Наша цель — чтобы вы чувствовали себя уверенно в любой поездке.\n" +
+      "Арендуйте с нами — быстро, безопасно и без переплат.",
+    support_prefix: "Для связи со службой поддержки по любым вопросам —",
+
+    // Города
+    city_all: "Все",
+    city_placeholder: "Нажмите чтобы выбрать город",
+  },
+
+  en: {
+    title: "Telegram Mini App",
+
+    // Categories
+    cat_cars_title: "Cars",
+    cat_cars_desc: "From economy to premium",
+    cat_moto_title: "Motorcycles",
+    cat_moto_desc: "For vivid emotions and city agility",
+    cat_house_title: "Realty",
+    cat_house_desc: "From cozy studios to spacious villas",
+    cat_tour_title: "Tours",
+    cat_tour_desc: "Unforgettable routes from local guides",
+
+    // About
+    about_title: "About us",
+    about_body:
+      "Hi! We are your reliable rental assistant.\n\n" +
+      "We know how hard it can be in a new city: long searches, doubts about reliability, unclear terms.\n\n" +
+      "So we made it simple:\n" +
+      "· Collected the best local companies for car, moto, housing rentals and tours.\n" +
+      "· Checked their reviews and reputation.\n" +
+      "· Brought everything together so you can choose in minutes.\n\n" +
+      "How it works:\n" +
+      "· Compare options — everything in one place.\n" +
+      "· Pick what fits — with handy filters and fixed prices.\n" +
+      "· Book right in the app — fast and without extra calls.\n\n" +
+      "Our goal is that you feel confident on any trip.\n" +
+      "Rent with us — fast, safe and without overpayments.",
+    support_prefix: "For support on any questions —",
+
+    // Cities
+    city_all: "All",
+    city_placeholder: "Tap to choose a city",
+  },
+};
+
+const langSelect = document.getElementById("langSelect");
+let LANG =
+  localStorage.getItem("rent_lang") ||
+  (navigator.language?.startsWith("en") ? "en" : "ru");
+langSelect.value = LANG;
+
+function t(key) {
+  return I18N[LANG][key] ?? key;
 }
 
-/**
- * Функция для загрузки новых авто по умолчанию.
- * Можно адаптировать под любые категории (мото, дома, туры и т.д.)
- */
-// async function fetchNewCars() {
-//   try {
-//     const res = await fetch(`${API_BASE}/cars/cars/`);
-//     if (!res.ok) throw new Error("Ошибка загрузки данных");
-//     const data = await res.json();
-//     const cars = data?.results || [];
-//     renderCards(cars);
-//   } catch (err) {
-//     console.error(err);
-//     cardsContainer.innerHTML = `<p style="text-align:center;color:red;">Не удалось загрузить данные</p>`;
-//   }
-// }
+function nl2br(str) {
+  return String(str).replace(/\n/g, "<br>");
+}
 
-// /**
-//  * Рендер карточек (используем одну структуру для всех типов)
-//  */
-// function renderCards(items, type = "default") {
-//   if (!items?.length) {
-//     cardsContainer.innerHTML = "<p>Нет предложений</p>";
-//     return;
-//   }
+function applyI18n() {
+  // document title
+  document.title = t("title");
 
-//   console.log(type);
-  
-//   const html = items
-//     .slice(0, 6)
-//     .map((item) => {
-//       // если это недвижимость (houses)
-//       if (type === "houses" || type === "tours" || item.area !== undefined) {
-//         const isBooked = item.__hasConflict || false;
-//         let bookedText = "";
-//         if (isBooked && item.__conflictRange?.length) {
-//           const b = item.__conflictRange[0];
-//           bookedText = `Занято: ${toLocalDate(b.start_date).toLocaleDateString(
-//             "ru-RU"
-//           )} — ${toLocalDate(b.end_date).toLocaleDateString("ru-RU")}`;
-//         }
-
-//         return `
-//         <div class="card ${isBooked ? "unavailable" : ""}">
-//           <img src="${item.images?.[0]?.image || "../../images/no_photo.png"}" alt="${item.title}">
-//           <div class="info">
-//             <div style="display: flex; align-items: center; justify-content: space-between;">
-//               <h4>${item.title}</h4>
-//               <p>${item.area ?? "—"} кв/м</p>
-//             </div>
-//             ${
-//               isBooked
-//                 ? `<p class="booked" style="color: red; margin-top: 6px;">${bookedText}</p>`
-//                 : ""
-//             }
-//             <div class="goods">
-//               ${(item.features || []).map((v) => `<li>${v.title}</li>`).join("")}
-//             </div>
-//             <div class="line"></div>
-//             <div class="price">
-//               <h4>${rub(item.price_per_day)}</h4>
-//               <p>${rub(item.price_per_day)}/день<br>Депозит: ${rub(item.deposit || 0)}</p>
-//             </div>
-//             <button class="openBooking" ${
-//               isBooked ? "disabled" : ""
-//             } data-id="${item.id}">
-//               ${isBooked ? "Недоступно" : "Забронировать"}
-//             </button>
-//           </div>
-//         </div>`;
-//       }
-
-//       // иначе — стандартная карточка (авто, мото, экскурсии)
-//       return `
-//       <div class="card">
-//         <img src="${item.images?.[0]?.image || './images/car_img.png'}" alt="${item.title}">
-//         <div class="info">
-//           <div>
-//             <h4>${item.title}</h4>
-//             <p>${item.year || "—"}, ${item.color || "—"}</p>
-//           </div>
-//           <div>
-//             <li><img src="./images/car_parameters/motor.svg" alt="motor">${item.engine_volume || "—"}L</li>
-//             <li><img src="./images/car_parameters/settings.svg" alt="settings">${item.transmission || "—"}</li>
-//             <li><img src="./images/car_parameters/road.svg" alt="road">${item.mileage || 0} km</li>
-//             <li><img src="./images/car_parameters/oil.svg" alt="oil">${item.oil_type || "—"}</li>
-//           </div>
-//           <div class="goods">
-//             ${(item.features || []).map(f => `<li>${f.title}</li>`).join("")}
-//           </div>
-//           <div class="line"></div>
-//           <div class="price">
-//             <h4>${item.price_per_day || 0}฿</h4>
-//             <p>Депозит: ${item.deposit || 0}฿</p>
-//           </div>
-//           <button>Забронировать</button>
-//         </div>
-//       </div>`;
-//     })
-//     .join("");
-
-//   cardsContainer.innerHTML = html;
-// }
-
-/* ==============================
-   Кнопки переключения категорий
-   ============================== */
-document.querySelectorAll(".choices__btns button").forEach((btn) => {
-  btn.addEventListener("click", async () => {
-    document.querySelectorAll(".choices__btns button").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    const type = btn.textContent.trim();
-
-    if (type === "Автомобили") await fetchCategory("cars/cars", "cars");
-    else if (type === "Мотоциклы") await fetchCategory("motorcycles/motorcycles", "motorcycles");
-    else if (type === "Недвижимость") await fetchCategory("houses/houses", "houses");
-    else if (type === "Экскурсии") await fetchCategory("excursions/excursions", "tours");
+  // simple [data-i18n] replacements (innerHTML)
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    const val = t(key);
+    // поддержка многострочного about_body
+    if (key === "about_body") {
+      el.innerHTML = nl2br(val);
+    } else {
+      el.innerHTML = val;
+    }
   });
-});
 
-/* ==============================
-   Общая функция для подгрузки категорий
-   ============================== */
-async function fetchCategory(endpoint, type = "default") {
-  try {
-    const res = await fetch(`${API_BASE}/${endpoint}/`);
-    if (!res.ok) throw new Error("Ошибка загрузки данных");
-    const data = await res.json();
-    renderCards(data?.results || [], type);
-  } catch (err) {
-    console.error(err);
-    cardsContainer.innerHTML = `<p style="text-align:center;color:red;">Ошибка загрузки ${endpoint}</p>`;
+  // city picker placeholder + “All”
+  const picker = document.getElementById("cityPicker");
+  if (picker && picker.options.length) {
+    // Обновим тексты первого (placeholder) и пункта "Все/All" при наличии
+    const placeholder = picker.querySelector("option[data-kind='placeholder']");
+    const allOpt = picker.querySelector("option[data-kind='all']");
+    if (placeholder) placeholder.textContent = t("city_placeholder");
+    if (allOpt) allOpt.textContent = t("city_all");
   }
 }
-/* ==============================
-   Стартовая загрузка
-   ============================== */
-// fetchNewCars();
 
-if(!localStorage.getItem('selectedCity')){
-  localStorage.setItem('selectedCity', 'Все')
+// language change
+langSelect.addEventListener("change", () => {
+  LANG = langSelect.value;
+  localStorage.setItem("rent_lang", LANG);
+  applyI18n();
+});
+
+/* ==============================
+   Города (City Picker)
+   ============================== */
+const API_BASE = "https://rentareabackend.pythonanywhere.com/api";
+const cityPicker = document.getElementById("cityPicker");
+
+// ensure default selectedCity
+if (!localStorage.getItem("selectedCity")) {
+  localStorage.setItem("selectedCity", I18N[LANG].city_all);
 }
 
-const pickerCities = document.querySelector('.picker-city');
+function fillCitiesOptions(list) {
+  const saved = localStorage.getItem("selectedCity");
+
+  const opts = [
+    `<option data-kind="placeholder" value="" selected>${t("city_placeholder")}</option>`,
+    `<option data-kind="all" value="${t("city_all")}">${t("city_all")}</option>`,
+    ...list.map(
+      (item) => `<option value="${item.name}">${item.name}</option>`
+    ),
+  ];
+
+  cityPicker.innerHTML = opts.join("");
+
+  // restore saved value if present in options, else keep placeholder
+  if (saved) {
+    const toSet =
+      Array.from(cityPicker.options).find((o) => o.value === saved)?.value ||
+      "";
+    cityPicker.value = toSet;
+  }
+}
 
 fetch(`${API_BASE}/core/cities/`)
-  .then(res => res.json())
-  .then(res => {
-    // создаём пункт "Все"
-    const options = [
-      `<option value="Все" selected>Нажмите чтобы выбрать город</option>`,
-      ...res.results.map(item => `<option value="${item.name}">${item.name}</option>`)
-    ];
+  .then((r) => r.json())
+  .then((res) => fillCitiesOptions(res?.results || []))
+  .catch((err) => {
+    console.error("Ошибка загрузки городов:", err);
+    // even if failed, render baseline options
+    fillCitiesOptions([]);
+  });
 
-    pickerCities.innerHTML = options.join('');
-
-    // восстановим сохранённый город из localStorage
-    const savedCity = localStorage.getItem('selectedCity');
-    if (savedCity) {
-      pickerCities.value = savedCity;
-    } else {
-      pickerCities.value = 'all'; // по умолчанию — "Все"
-    }
-  })
-  .catch(err => console.error('Ошибка загрузки городов:', err));
-
-// слушаем выбор пользователя
-pickerCities.addEventListener('change', (e) => {
-  const selectedCity = e.target.value;
-  localStorage.setItem('selectedCity', selectedCity);
-  console.log('Выбран город:', selectedCity);
+cityPicker.addEventListener("change", (e) => {
+  const selectedCity = e.target.value || t("city_all");
+  localStorage.setItem("selectedCity", selectedCity);
+  console.log("Выбран город:", selectedCity);
 });
+
+/* ==============================
+   Первый рендер i18n
+   ============================== */
+applyI18n();

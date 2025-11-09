@@ -6,61 +6,171 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Авто — Telegram Mini App</title>
+    <title data-i18n="title">Авто — Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="./style.css" />
     <style>
-      /* мини-стили для фильтра, если в твоём style.css нет */
       .filter { display:flex; align-items:center; gap:8px; color:#99A2AD; padding:0 15px; cursor:pointer; user-select:none; }
       .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter: blur(2px); z-index:1000; justify-content:center; align-items:flex-end; }
       .modal-content { width:100%; max-height:90%; overflow:auto; background:#fff; border-radius:20px 20px 0 0; padding:20px; animation:slideUp .25s ease-out; }
       .modal .close { font-size:24px; cursor:pointer; float:right; }
       @keyframes slideUp { from { transform: translateY(100%);} to { transform: translateY(0);} }
+
+      .lang-switch {
+        position: fixed; top: 10px; right: 12px; z-index: 1100;
+        display:flex; gap:6px; align-items:center; background:#fff;
+        border-radius: 10px; padding:6px 10px; box-shadow:0 2px 8px rgba(0,0,0,.08);
+      }
+      .lang-switch select { border:none; outline:none; background:transparent; font-weight:600; }
+      /* === PROMO BLOCK === */
+      .promo-block {
+        margin-top: 16px;
+        background: #f9fafb;
+        border: 1px solid #e1e5eb;
+        border-radius: 12px;
+        padding: 16px;
+        transition: 0.3s ease;
+      }
+
+      .promo-block:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Заголовок */
+      .promo-block h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111;
+        margin-bottom: 10px;
+      }
+
+      /* Ввод + кнопка */
+      .promo-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .promo-row input {
+        flex: 1;
+        padding: 10px 14px;
+        font-size: 15px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        outline: none;
+        transition: border 0.2s, box-shadow 0.2s;
+      }
+
+      .promo-row input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.15);
+      }
+
+      /* Кнопка */
+      .promo-row button {
+        background: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 500;
+        padding: 10px 18px;
+        cursor: pointer;
+        transition: 0.25s ease;
+      }
+
+      .promo-row button:hover {
+        background: #0056d6;
+      }
+
+      /* Сообщение */
+      #promoMessage {
+        margin-top: 8px;
+        font-size: 14px;
+        color: #99a2ad;
+        transition: 0.2s;
+      }
+
+      /* Для успеха / ошибки */
+      #promoMessage.success {
+        color: #2ecc71; /* зелёный */
+      }
+
+      #promoMessage.error {
+        color: #e74c3c; /* красный */
+      }
+
+      #promoMessage.warning {
+        color: #f39c12; /* оранжевый */
+      }
+
+      /* Адаптив под мобильные устройства */
+      @media (max-width: 480px) {
+        .promo-row {
+          flex-direction: column;
+        }
+
+        .promo-row button {
+          width: 100%;
+        }
+      }
+
+      .payment-breakdown p { display:flex; justify-content:space-between; gap:12px; }
+      .payment-breakdown p b { font-weight:600; }
     </style>
   </head>
   <body>
+    <!-- Переключатель языка -->
+    <div class="lang-switch">
+      <img src="../../images/nav/map.svg" width="14" height="14" alt="">
+      <select id="langSelect" aria-label="Language">
+        <option value="ru">RU</option>
+        <option value="en">EN</option>
+      </select>
+    </div>
+
     <div class="logo">
       <img src="../../images/logo.svg" alt="logo" />
     </div>
 
     <main>
-      <h4 class="title">Автомобили</h4>
+      <h4 class="title" data-i18n="cars_title">Автомобили</h4>
 
       <div class="sorting" style="padding:0 15px; margin-bottom:10px;">
-        <label>Сортировка:</label>
+        <label data-i18n="sorting">Сортировка:</label>
         <select id="sortPrice">
-          <option value="none">Без сортировки</option>
-          <option value="asc">По возрастанию цены</option>
-          <option value="desc">По убыванию цены</option>
+          <option value="none" data-i18n="sort_none">Без сортировки</option>
+          <option value="asc" data-i18n="sort_asc">По возрастанию цены</option>
+          <option value="desc" data-i18n="sort_desc">По убыванию цены</option>
         </select>
       </div>
 
       <!-- КНОПКА ОТКРЫТИЯ ФИЛЬТРА -->
       <p class="filter">
         <img src="../../images/sliders.svg" alt="sliders" width="18" height="18"/>
-        Настроить фильтр
+        <span data-i18n="setup_filter">Настроить фильтр</span>
       </p>
 
       <div class="date-picker">
-        <p>Дата аренды</p>
+        <p data-i18n="rent_date">Дата аренды</p>
         <div class="date-box">
           <div class="date-section">
             <img src="../../images/date.svg" alt="date" />
-            <label for="start-date">От:</label>
+            <label for="start-date" data-i18n="from">От:</label>
             <input type="date" id="start-date" class="date-field" />
           </div>
           <div class="date-section">
             <img src="../../images/date.svg" alt="date" />
-            <label for="end-date">До:</label>
+            <label for="end-date" data-i18n="to">До:</label>
             <input type="date" id="end-date" class="date-field" />
           </div>
         </div>
-        <button class="show">Найти</button>
+        <button class="show" data-i18n="find">Найти</button>
       </div>
 
       <div class="category-container">
         <div class="category-picker">
-          <p>Выберите класс автомобиля</p>
+          <p data-i18n="choose_class">Выберите класс автомобиля</p>
           <div class="categories"></div>
         </div>
       </div>
@@ -71,7 +181,7 @@
       <div class="modal" id="bookingModal">
         <div class="modal-content">
           <span class="close">&times;</span>
-          <h3>Детали заказа</h3>
+          <h3 data-i18n="order_details">Детали заказа</h3>
 
           <div class="card">
             <img
@@ -79,75 +189,95 @@
               alt="car"
               class="photo_product"
             />
-            <h4 class="car-title">Название автомобиля</h4>
+            <h4 class="car-title" data-i18n="car_name_fallback">Название автомобиля</h4>
             <p class="description"></p>
 
             <div class="line"></div>
 
             <div class="date-info">
-              <p><b>Дата аренды:</b> <span class="date-pick-result">—</span></p>
+              <p><b data-i18n="rent_date_colon">Дата аренды:</b> <span class="date-pick-result">—</span></p>
             </div>
-            <!-- <p class="date-pick-result">Выберите даты</p> -->
-            <div class="row">
-              <h4>Итого: <span class="price">—</span></h4>
+
+            <div class="row" style="display:flex;align-items:center;justify-content:space-between;">
+              <h4><span data-i18n="total">Итого:</span> <span class="price">—</span></h4>
             </div>
           </div>
 
+          <!-- Разбивка платежа -->
+          <div class="payment-breakdown" style="margin-top:10px;">
+            <div class="line"></div>
+            <p><span data-i18n="rent_amount_label">Аренда</span> <span class="rent-amount">—</span></p>
+            <p><span data-i18n="delivery_amount_label">Доставка</span> <span class="delivery-amount">—</span></p>
+            <p class="discount-row" style="display:none;"><span data-i18n="discount_label">Скидка</span> <span class="discount-amount">—</span></p>
+            <p><span data-i18n="deposit">Депозит</span> <span class="deposit-amount">—</span></p>
+            <div class="line"></div>
+            <p><b data-i18n="total">Итого:</b> <b class="total-amount">—</b></p>
+          </div>
+
           <form class="booking-form" id="bookingForm">
-            <label>Имя</label>
+            <label data-i18n="name">Имя</label>
             <div class="input">
               <img src="../../images/user.svg" alt="user" />
-              <input type="text" placeholder="Ваше имя" required />
+              <input type="text" placeholder="Ваше имя" required data-i18n-ph="ph_name"/>
             </div>
 
-            <label>Номер телефона</label>
+            <label data-i18n="phone">Номер телефона</label>
             <div class="input">
               <img src="../../images/phone.svg" alt="phone" />
-              <input type="tel" placeholder="Ваш номер телефона" required />
+              <input type="tel" placeholder="Ваш номер телефона" required data-i18n-ph="ph_phone"/>
             </div>
 
-            <label>Доставка</label>
+            <label data-i18n="delivery">Доставка</label>
             <div class="input">
-              <img src="../../images/truck.svg" alt="phone" />
-              <select class="delivery">
-
-              </select>
+              <img src="../../images/truck.svg" alt="truck" />
+              <select class="delivery"></select>
             </div>
 
-            <label>Комментарии</label>
+            <!-- ПРОМОКОД -->
+            <div class="promo-block" style="margin-top:12px;">
+              <h4 style="margin-bottom:6px;">Введите промокод для скидки</h4>
+              <div class="input promo-row" style="display:flex;gap:8px;">
+                <input type="text" id="promoCode" placeholder="Например: PROMO10" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;">
+                <button type="button" id="applyPromo" class="btn" style="padding:10px 18px;">Применить скидку</button>
+              </div>
+              <p id="promoMessage" style="margin-top:6px;color:#99A2AD;font-size:14px;">Скидка применяется только к аренде</p>
+            </div>
+
+            <label data-i18n="comments">Комментарии</label>
             <div class="input">
               <img src="../../images/comment.svg" alt="comment" />
-              <input type="text" placeholder="Ваш комментарий" />
+              <input type="text" placeholder="Ваш комментарий" data-i18n-ph="ph_comment"/>
             </div>
 
             <label class="checkbox" style="display:flex; gap:8px; align-items:center; margin-top:6px;">
               <input type="checkbox" id="agreeRules" />
               <span>
-                Я согласен с
-                <button type="button" class="rules-link">правилами аренды</button>
+                <span data-i18n="agree_with">Я согласен с</span>
+                <button type="button" class="rules-link" data-i18n="rental_rules_btn">правилами аренды</button>
               </span>
             </label>
-            <button type="submit" class="btn">Забронировать</button>
+            <button type="submit" class="btn" data-i18n="book">Забронировать</button>
           </form>
         </div>
       </div>
 
+      <!-- Правила аренды -->
       <div class="modal" id="rulesModal">
         <div class="modal-content" style="max-width: 640px; margin: 0 auto;">
           <span class="close rules-close">&times;</span>
-          <h3 style="margin-top: 0;">Правила аренды</h3>
+          <h3 style="margin-top: 0;" data-i18n="rental_rules_title">Правила аренды</h3>
 
           <div class="rules-body" style="display:flex; flex-direction:column; gap:10px;">
-            <p><b>1. Общие условия.</b> Минимальный срок аренды — 1 сутки. Документы и залог требуются согласно условиям компании.</p>
-            <p><b>2. Оплата.</b> Аренда оплачивается авансом. Дополнительно могут взиматься: доставка, депозит, опции.</p>
-            <p><b>3. Депозит.</b> Возвращается после проверки авто/имущества при отсутствии нарушений и штрафов.</p>
-            <p><b>4. Использование.</b> Запрещены гонки, буксировка, передача управления третьим лицам без согласования.</p>
-            <p><b>5. Штрафы и повреждения.</b> Штрафы и ущерб оплачиваются арендатором согласно акту.</p>
-            <p><b>6. Возврат.</b> Возврат в оговорённое время. Просрочка тарифицируется как дополнительный период.</p>
-            <p style="color:#99A2AD;">*Это шаблон. Подставь сюда свои актуальные правила.</p>
+            <p data-i18n="rules_stub1"><b>1. Общие условия.</b> Минимальный срок аренды — 1 сутки. Документы и залог требуются согласно условиям компании.</p>
+            <p data-i18n="rules_stub2"><b>2. Оплата.</b> Аренда оплачивается авансом. Дополнительно могут взиматься: доставка, депозит, опции.</p>
+            <p data-i18n="rules_stub3"><b>3. Депозит.</b> Возвращается после проверки авто/имущества при отсутствии нарушений и штрафов.</p>
+            <p data-i18n="rules_stub4"><b>4. Использование.</b> Запрещены гонки, буксировка, передача управления третьим лицам без согласования.</p>
+            <p data-i18n="rules_stub5"><b>5. Штрафы и повреждения.</b> Штрафы и ущерб оплачиваются арендатором согласно акту.</p>
+            <p data-i18n="rules_stub6"><b>6. Возврат.</b> Возврат в оговорённое время. Просрочка тарифицируется как дополнительный период.</p>
+            <p style="color:#99A2AD;" data-i18n="rules_stub_note">*Это шаблон. Подставь сюда свои актуальные правила.</p>
           </div>
 
-          <button type="button" class="btn rules-ok" style="margin-top:16px;">Понятно</button>
+          <button type="button" class="btn rules-ok" style="margin-top:16px;" data-i18n="ok">Понятно</button>
         </div>
       </div>
 
@@ -155,9 +285,9 @@
       <div id="successModal" class="success-modal">
         <div class="success-box">
           <img src="../../images/check.svg" alt="success" class="success-icon">
-          <h2>Ваша заявка принята!</h2>
-          <p>В течении 15 минут с вами свяжутся наши менеджеры)</p>
-          <button id="closeSuccess" class="btn-ok">Ок</button>
+          <h2 data-i18n="success_title">Ваша заявка принята!</h2>
+          <p data-i18n="success_text">В течении 15 минут с вами свяжутся наши менеджеры)</p>
+          <button id="closeSuccess" class="btn-ok" data-i18n="ok">Ок</button>
         </div>
       </div>
 
@@ -165,46 +295,46 @@
       <div class="modal" id="filterModal">
         <div class="modal-content filter-modal">
           <span class="close">&times;</span>
-          <h3>Фильтрация</h3>
+          <h3 data-i18n="filtering">Фильтрация</h3>
           <form id="filterForm">
-            <label>Марка</label>
+            <label data-i18n="brand">Марка</label>
             <select id="filterBrand"></select>
 
-            <label>Модель</label>
+            <label data-i18n="model">Модель</label>
             <select id="filterModel"></select>
 
-            <label>Год выпуска (от)</label>
-            <input type="number" id="filterYear" placeholder="Год от" />
+            <label data-i18n="year_from">Год выпуска (от)</label>
+            <input type="number" id="filterYear" data-i18n-ph="ph_year_from" placeholder="Год от" />
 
-            <label>Цвет</label>
+            <label data-i18n="color">Цвет</label>
             <select id="filterColor">
-              <option value="">Любой</option>
-              <option>Белый</option>
-              <option>Черный</option>
-              <option>Красный</option>
-              <option>Серебристый</option>
-              <option>Синий</option>
+              <option value="" data-i18n="any">Любой</option>
+              <option data-i18n="white">Белый</option>
+              <option data-i18n="black">Черный</option>
+              <option data-i18n="red">Красный</option>
+              <option data-i18n="silver">Серебристый</option>
+              <option data-i18n="blue">Синий</option>
             </select>
 
-            <label>Коробка передач</label>
+            <label data-i18n="transmission">Коробка передач</label>
             <select id="filterTransmission">
-              <option value="">Любая</option>
+              <option value="" data-i18n="any">Любая</option>
               <option>АКПП</option>
               <option>МКПП</option>
             </select>
 
             <div class="price-filter" style="display:flex; gap:10px;">
               <div style="flex:1;">
-                <label>Цена от</label>
-                <input type="number" id="priceFrom" placeholder="От" style="width: 90%;"/>
+                <label data-i18n="price_from">Цена от</label>
+                <input type="number" id="priceFrom" style="width: 90%;" data-i18n-ph="ph_price_from" placeholder="От"/>
               </div>
               <div style="flex:1;">
-                <label>Цена до</label>
-                <input type="number" id="priceTo" placeholder="До" style="width: 90%;"/>
+                <label data-i18n="price_to">Цена до</label>
+                <input type="number" id="priceTo" style="width: 90%;" data-i18n-ph="ph_price_to" placeholder="До"/>
               </div>
             </div>
 
-            <button type="submit" class="btn">Найти</button>
+            <button type="submit" class="btn" data-i18n="find">Найти</button>
           </form>
         </div>
       </div>
@@ -214,27 +344,27 @@
       <ul class="bottom__bar">
         <li>
           <a href="../../index.html">
-            <img src="../../images/nav/home.svg" alt="home" /> Главная
+            <img src="../../images/nav/home.svg" alt="home" /> <span data-i18n="nav_home">Главная</span>
           </a>
         </li>
         <li>
           <a href="#" class="active">
-            <img src="../../images/nav/car.svg" alt="car" /> Авто
+            <img src="../../images/nav/car.svg" alt="car" /> <span data-i18n="nav_cars">Авто</span>
           </a>
         </li>
         <li>
           <a href="../house/house.html">
-            <img src="../../images/nav/building.svg" alt="building" /> Недвижимость
+            <img src="../../images/nav/building.svg" alt="building" /> <span data-i18n="nav_realty">Недвижимость</span>
           </a>
         </li>
         <li>
           <a href="../moto/moto.html">
-            <img src="../../images/nav/moto.svg" alt="moto" /> Мото
+            <img src="../../images/nav/moto.svg" alt="moto" /> <span data-i18n="nav_moto">Мото</span>
           </a>
         </li>
         <li>
           <a href="../tour/tour.html">
-            <img src="../../images/nav/map.svg" alt="map" /> Экскурсии
+            <img src="../../images/nav/map.svg" alt="map" /> <span data-i18n="nav_tours">Экскурсии</span>
           </a>
         </li>
       </ul>
