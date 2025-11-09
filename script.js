@@ -6,28 +6,63 @@
 const tg = window.Telegram?.WebApp;
 tg?.ready?.();
 
-const disableSwipeClose = () => {
+let __unlockSwipeHandler = null;
+
+function lockApp() {
+  // запрет свайпа-вниз (закрытия)
+  const disableSwipeClose = () => {
+    try {
+      if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
+        tg.swipeBehavior.disableVertical();
+      } else if (tg?.disableVerticalSwipes) {
+        tg.disableVerticalSwipes(); // fallback
+      }
+    } catch {}
+  };
+
+  tg?.expand?.();
+  disableSwipeClose();
+  // пере-применяем при изменении вьюпорта (некоторые клиенты откатывают)
+  __unlockSwipeHandler = disableSwipeClose;
+  tg?.onEvent?.("viewportChanged", __unlockSwipeHandler);
+
+  // подтверждение закрытия и перехват BackButton
+  tg?.enableClosingConfirmation?.();
+  tg?.BackButton?.show?.();
+  tg?.BackButton?.onClick?.(() => {
+    // например, показываем свою модалку или просто игнорим
+    // если нужно закрыть — вызови unlockApp(); tg.close();
+  });
+}
+
+function unlockApp() {
+  // разрешаем закрытие обычным способом
   try {
-    if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
-      tg.swipeBehavior.disableVertical();           // новый API
-    } else if (tg?.disableVerticalSwipes) {
-      tg.disableVerticalSwipes();                   // старый API (фолбэк)
+    if (tg?.swipeBehavior?.enableVertical?.isAvailable?.()) {
+      tg.swipeBehavior.enableVertical?.();
+    } else if (tg?.enableVerticalSwipes) {
+      tg.enableVerticalSwipes(); // fallback
     }
-  } catch (e) { /* no-op */ }
-};
+  } catch {}
 
-tg?.expand?.();            // растягиваем на весь экран
-disableSwipeClose();       // сразу вырубаем вертикальные свайпы
-tg?.onEvent?.('viewportChanged', disableSwipeClose); // некоторые клиенты могут откатывать
+  // снимаем confirmation
+  tg?.disableClosingConfirmation?.();
 
-// Показываем подтверждение при попытке закрыть (крестик/назад)
-tg?.enableClosingConfirmation?.();
+  // возвращаем стандартную реакцию Back
+  tg?.BackButton?.hide?.();
+  tg?.BackButton?.onClick?.(null);
 
-// (Опционально) перехватываем BackButton, чтобы не закрывался апп
-tg?.BackButton?.show?.();
-tg?.BackButton?.onClick?.(() => {
-  // сюда свою навигацию/модалку; чтобы закрыть совсем — tg.close()
-});
+  // отписываемся от авто-блокировки при viewportChanged
+  if (__unlockSwipeHandler) {
+    tg?.offEvent?.("viewportChanged", __unlockSwipeHandler);
+    __unlockSwipeHandler = null;
+  }
+}
+
+// ==== пример использования ====
+// Старт: заблокировать
+lockApp();
+
 
 tg?.expand?.();
 if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
