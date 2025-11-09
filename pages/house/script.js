@@ -11,28 +11,40 @@ if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
   console.log("🔒 Vertical swipe disabled");
 }
 
-const disableSwipeClose = () => {
+/* ==============================
+   Close control: block swipe, keep Back working
+   ============================== */
+(function () {
+  const w = window.Telegram?.WebApp;
+  if (!w) return;
+
+  // 1) Запрещаем закрытие вертикальным свайпом (новый API + фолбэк)
+  const disableSwipeClose = () => {
+    try {
+      if (w?.swipeBehavior?.disableVertical?.isAvailable?.()) {
+        w.swipeBehavior.disableVertical();
+      } else if (w?.disableVerticalSwipes) {
+        w.disableVerticalSwipes(); // legacy
+      }
+    } catch (e) { /* no-op */ }
+  };
+
+  disableSwipeClose();
+  // На некоторых клиентах настройки сбрасываются при изменении вьюпорта — переустанавливаем.
+  w?.onEvent?.('viewportChanged', disableSwipeClose);
+
+  // 2) НЕ включаем подтверждение закрытия — пусть кнопка «Назад» закрывает сразу.
+  // w.enableClosingConfirmation(); // <-- не используем
+
+  // 3) Делаем «Назад» рабочей: по клику закрываем мини-апп
   try {
-    if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
-      tg.swipeBehavior.disableVertical();           // новый API
-    } else if (tg?.disableVerticalSwipes) {
-      tg.disableVerticalSwipes();                   // старый API (фолбэк)
-    }
-  } catch (e) { /* no-op */ }
-};
+    // Сбросим старые обработчики, если вдруг были
+    if (typeof w?.BackButton?.offClick === 'function') w.BackButton.offClick(); 
+  } catch(_) {}
 
-tg?.expand?.();            // растягиваем на весь экран
-disableSwipeClose();       // сразу вырубаем вертикальные свайпы
-tg?.onEvent?.('viewportChanged', disableSwipeClose); // некоторые клиенты могут откатывать
-
-// Показываем подтверждение при попытке закрыть (крестик/назад)
-tg?.enableClosingConfirmation?.();
-
-// (Опционально) перехватываем BackButton, чтобы не закрывался апп
-tg?.BackButton?.show?.();
-tg?.BackButton?.onClick?.(() => {
-  // сюда свою навигацию/модалку; чтобы закрыть совсем — tg.close()
-});
+  w?.BackButton?.show?.();
+  w?.BackButton?.onClick?.(() => w?.close?.());
+})();
 
 /* ===== i18n ===== */
 const I18N = {
