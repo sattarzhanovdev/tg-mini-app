@@ -6,58 +6,45 @@
 const tg = window.Telegram?.WebApp;
 tg?.ready?.();
 
-// === BACK BUTTON ROBUST INIT ===
-let __backHandlerBound = false;
-
-function backHandler() {
-  // 👉 сюда твоя логика «Назад»
-  // пример: закрыть модалку/страницу, либо выйти:
-  // unlockApp(); tg.close();
-  console.log('[TG] Back pressed');
-}
-
-function initBackButton() {
-  if (!tg) return;
-  if (__backHandlerBound) return; // не дублируем
-
-  // Показать кнопку
-  tg.BackButton?.show?.();
-
-  // 1) Официальный обработчик
-  tg.BackButton?.onClick?.(backHandler);
-
-  // 2) Запасной канал — глобальное событие
-  tg.offEvent?.('backButtonClicked', backHandler); // на всякий случай уберём дубликаты
-  tg.onEvent?.('backButtonClicked', backHandler);
-
-  __backHandlerBound = true;
-}
-
-function disposeBackButton() {
-  if (!tg) return;
-  // Спрячь и отпишись, когда нужно убрать свою логику «Назад»
-  tg.BackButton?.hide?.();
-  tg.BackButton?.onClick?.(null);
-  tg.offEvent?.('backButtonClicked', backHandler);
-  __backHandlerBound = false;
-}
-
-// ВАЖНО: вызывать ПОСЛЕ tg.ready()
-initBackButton();
-
-// Если у тебя где-то есть обработчик viewportChanged,
-// не перезаписывай onClick. Максимум — повторно показать:
-tg?.onEvent?.('viewportChanged', () => {
-  // не трогаем подписку, только гарантируем, что кнопка видна
-  tg.BackButton?.show?.();
-});
-
 
 tg?.expand?.();
-if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
-  tg.swipeBehavior.disableVertical();
-}
+
 const user = tg?.initDataUnsafe?.user ?? null;
+/* ==============================
+   Close control: block swipe, keep Back working
+   ============================== */
+(function () {
+  const w = window.Telegram?.WebApp;
+  if (!w) return;
+
+  // 1) Запрещаем закрытие вертикальным свайпом (новый API + фолбэк)
+  const disableSwipeClose = () => {
+    try {
+      if (w?.swipeBehavior?.disableVertical?.isAvailable?.()) {
+        w.swipeBehavior.disableVertical();
+      } else if (w?.disableVerticalSwipes) {
+        w.disableVerticalSwipes(); // legacy
+      }
+    } catch (e) { /* no-op */ }
+  };
+
+  disableSwipeClose();
+  // На некоторых клиентах настройки сбрасываются при изменении вьюпорта — переустанавливаем.
+  w?.onEvent?.('viewportChanged', disableSwipeClose);
+
+  // 2) НЕ включаем подтверждение закрытия — пусть кнопка «Назад» закрывает сразу.
+  // w.enableClosingConfirmation(); // <-- не используем
+
+  // 3) Делаем «Назад» рабочей: по клику закрываем мини-апп
+  try {
+    // Сбросим старые обработчики, если вдруг были
+    if (typeof w?.BackButton?.offClick === 'function') w.BackButton.offClick(); 
+  } catch(_) {}
+
+  w?.BackButton?.show?.();
+  w?.BackButton?.onClick?.(() => w?.close?.());
+})();
+
 
 (function(){
   const tg = window.Telegram?.WebApp;
