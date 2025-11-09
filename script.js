@@ -11,6 +11,24 @@ if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
 }
 const user = tg?.initDataUnsafe?.user ?? null;
 
+(function(){
+  const tg = window.Telegram?.WebApp;
+  const tgId = tg?.initDataUnsafe?.user?.id || null;
+
+  const page = "index"; // поменяй на "cars", "moto", "house", "tour" на соответствующих страницах
+  const city = localStorage.getItem("selectedCity") || "";
+
+  const key = `visit:${page}`;
+  if (!sessionStorage.getItem(key)) {
+    fetch("https://rentareabackend.pythonanywhere.com/api/track-visit/", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ page, tg_id: user?.id, city })
+    }).catch(()=>{});
+    sessionStorage.setItem(key, "1");
+  }
+})();
+
 /* ==============================
    i18n (RU/EN)
    ============================== */
