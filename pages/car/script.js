@@ -276,6 +276,7 @@ async function fetchCategories() {
 async function fetchCars() {
   const r = await fetch(`${API}/cars/`);
   const data = await r.json();
+  
   allCars = data?.results || [];
 }
 async function fetchBookings() {
