@@ -6,62 +6,51 @@
 const tg = window.Telegram?.WebApp;
 tg?.ready?.();
 
-let __unlockSwipeHandler = null;
+// === BACK BUTTON ROBUST INIT ===
+let __backHandlerBound = false;
 
-function lockApp() {
-  // запрет свайпа-вниз (закрытия)
-  const disableSwipeClose = () => {
-    try {
-      if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
-        tg.swipeBehavior.disableVertical();
-      } else if (tg?.disableVerticalSwipes) {
-        tg.disableVerticalSwipes(); // fallback
-      }
-    } catch {}
-  };
-
-  tg?.expand?.();
-  disableSwipeClose();
-  // пере-применяем при изменении вьюпорта (некоторые клиенты откатывают)
-  __unlockSwipeHandler = disableSwipeClose;
-  tg?.onEvent?.("viewportChanged", __unlockSwipeHandler);
-
-  // подтверждение закрытия и перехват BackButton
-  tg?.enableClosingConfirmation?.();
-  tg?.BackButton?.show?.();
-  tg?.BackButton?.onClick?.(() => {
-    // например, показываем свою модалку или просто игнорим
-    // если нужно закрыть — вызови unlockApp(); tg.close();
-  });
+function backHandler() {
+  // 👉 сюда твоя логика «Назад»
+  // пример: закрыть модалку/страницу, либо выйти:
+  // unlockApp(); tg.close();
+  console.log('[TG] Back pressed');
 }
 
-function unlockApp() {
-  // разрешаем закрытие обычным способом
-  try {
-    if (tg?.swipeBehavior?.enableVertical?.isAvailable?.()) {
-      tg.swipeBehavior.enableVertical?.();
-    } else if (tg?.enableVerticalSwipes) {
-      tg.enableVerticalSwipes(); // fallback
-    }
-  } catch {}
+function initBackButton() {
+  if (!tg) return;
+  if (__backHandlerBound) return; // не дублируем
 
-  // снимаем confirmation
-  tg?.disableClosingConfirmation?.();
+  // Показать кнопку
+  tg.BackButton?.show?.();
 
-  // возвращаем стандартную реакцию Back
-  tg?.BackButton?.hide?.();
-  tg?.BackButton?.onClick?.(null);
+  // 1) Официальный обработчик
+  tg.BackButton?.onClick?.(backHandler);
 
-  // отписываемся от авто-блокировки при viewportChanged
-  if (__unlockSwipeHandler) {
-    tg?.offEvent?.("viewportChanged", __unlockSwipeHandler);
-    __unlockSwipeHandler = null;
-  }
+  // 2) Запасной канал — глобальное событие
+  tg.offEvent?.('backButtonClicked', backHandler); // на всякий случай уберём дубликаты
+  tg.onEvent?.('backButtonClicked', backHandler);
+
+  __backHandlerBound = true;
 }
 
-// ==== пример использования ====
-// Старт: заблокировать
-lockApp();
+function disposeBackButton() {
+  if (!tg) return;
+  // Спрячь и отпишись, когда нужно убрать свою логику «Назад»
+  tg.BackButton?.hide?.();
+  tg.BackButton?.onClick?.(null);
+  tg.offEvent?.('backButtonClicked', backHandler);
+  __backHandlerBound = false;
+}
+
+// ВАЖНО: вызывать ПОСЛЕ tg.ready()
+initBackButton();
+
+// Если у тебя где-то есть обработчик viewportChanged,
+// не перезаписывай onClick. Максимум — повторно показать:
+tg?.onEvent?.('viewportChanged', () => {
+  // не трогаем подписку, только гарантируем, что кнопка видна
+  tg.BackButton?.show?.();
+});
 
 
 tg?.expand?.();
