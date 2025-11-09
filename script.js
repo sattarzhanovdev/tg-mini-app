@@ -15,7 +15,7 @@ const user = tg?.initDataUnsafe?.user ?? null;
   const tg = window.Telegram?.WebApp;
   const tgId = tg?.initDataUnsafe?.user?.id || null;
 
-  const page = "index"; // поменяй на "cars", "moto", "house", "tour" на соответствующих страницах
+  const page = "index"; // поменяй на "cars", "moto", "house", "tour" ¬øна соответствующих страницах
   const city = localStorage.getItem("selectedCity") || "";
 
   const key = `visit:${page}`;
