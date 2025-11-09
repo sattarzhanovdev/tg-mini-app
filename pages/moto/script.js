@@ -7,6 +7,29 @@ const user = tg?.initDataUnsafe?.user ?? null;
 if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
   tg.swipeBehavior.disableVertical();
 }
+const disableSwipeClose = () => {
+  try {
+    if (tg?.swipeBehavior?.disableVertical?.isAvailable?.()) {
+      tg.swipeBehavior.disableVertical();           // новый API
+    } else if (tg?.disableVerticalSwipes) {
+      tg.disableVerticalSwipes();                   // старый API (фолбэк)
+    }
+  } catch (e) { /* no-op */ }
+};
+
+tg?.expand?.();            // растягиваем на весь экран
+disableSwipeClose();       // сразу вырубаем вертикальные свайпы
+tg?.onEvent?.('viewportChanged', disableSwipeClose); // некоторые клиенты могут откатывать
+
+// Показываем подтверждение при попытке закрыть (крестик/назад)
+tg?.enableClosingConfirmation?.();
+
+// (Опционально) перехватываем BackButton, чтобы не закрывался апп
+tg?.BackButton?.show?.();
+tg?.BackButton?.onClick?.(() => {
+  // сюда свою навигацию/модалку; чтобы закрыть совсем — tg.close()
+});
+
 
 /* ==== i18n ==== */
 const I18N = {
