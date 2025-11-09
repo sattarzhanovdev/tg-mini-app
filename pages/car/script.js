@@ -67,9 +67,11 @@ const I18N = {
     promo_hint:"Скидка действует только на стоимость аренды",
     discount_label:"Скидка",
     promo_applied:"Промокод применён",
-    promo_invalid:"Некорректный промокод"
+    promo_invalid:"Некорректный промокод",
+    get_in_touch_with_manager: 'Связаться с менеджером'
   },
   en: {
+    get_in_touch_with_manager: "Get in touch with a manager",
     title:"Cars — Telegram Mini App",
     cars_title:"Cars",
     sorting:"Sorting:",
@@ -126,6 +128,7 @@ const I18N = {
     promo_invalid:"Invalid promo code"
   }
 };
+
 const langSelect = document.getElementById("langSelect");
 let LANG = localStorage.getItem("rent_lang") || (navigator.language?.startsWith("en") ? "en" : "ru");
 langSelect.value = LANG;
@@ -137,14 +140,11 @@ function applyI18n() {
   document.querySelectorAll("[data-i18n]").forEach(el => { el.innerHTML = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
 }
-langSelect.addEventListener("change", () => {
-  LANG = langSelect.value;
-  localStorage.setItem("rent_lang", LANG);
-  applyI18n();
-  applyFilters();
-  renderCategories()
-});
-applyI18n();
+
+/* ===== API consts ===== */
+const API_BASE  = "https://rentareabackend.pythonanywhere.com/api/cars";
+const API_CARS  = `${API_BASE}/cars`;
+const API_PROMOS = `${API_BASE}/promos`;
 
 /* ===== Elements ===== */
 const categoriesContainer = document.querySelector(".categories");
@@ -174,7 +174,9 @@ const modalTotal = bookingModal?.querySelector(".price");
 
 const sortSelect = document.getElementById("sortPrice");
 
-/* ===== Запрет прошедших дат ===== */
+/* ===== Helpers ===== */
+const toList = (data) => (Array.isArray(data) ? data : (data?.results || []));
+
 (function lockPastDates() {
   if (!startInput || !endInput) return;
   const pad = (n) => String(n).padStart(2, "0");
@@ -201,7 +203,6 @@ const sortSelect = document.getElementById("sortPrice");
   });
 })();
 
-/* ===== Helpers ===== */
 const dayMs = 24 * 60 * 60 * 1000;
 const toLocalDate = (iso) => new Date(iso + "T00:00:00");
 const fmtRu = (d) => d.toLocaleDateString(LANG === "en" ? "en-GB" : "ru-RU", { day:"2-digit", month:"short" });
@@ -215,74 +216,49 @@ const declineDays = (n) => {
 };
 const overlaps = (aStart, aEnd, bStart, bEnd) => aStart < bEnd && aEnd > bStart;
 
-/* ===== API ===== */
-const API_BASE = "https://rentareabackend.pythonanywhere.com/api";
-const API = `${API_BASE}/cars`;
-
-// ==== PROMO API ====
-const PROMO_API = `${API_BASE}/promos`;
-
-async function validatePromo({ code, carId, start, end }) {
-  const body = {
-    code,
-    product_type: "car",
-    product_id: carId,
-    start_date: start,
-    end_date: end
-  };
-  const r = await fetch(`${PROMO_API}/validate/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  const data = await r.json();
-  return data; // {valid, reason, discount, subtotal, total_after, days, code}
-}
-
-async function redeemPromo({ code, bookingId, userId, discountAmount }) {
-  const body = {
-    code,
-    booking_id: bookingId ?? undefined,
-    user_id: userId ?? undefined,
-    discount_amount: typeof discountAmount === "number" ? discountAmount : undefined
-  };
-  try {
-    await fetch(`${PROMO_API}/redeem/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-  } catch(e) {
-    console.warn("redeemPromo failed", e);
-  }
-}
-
+/* ===== Global state ===== */
 let allCars = [];
 let allCategories = [];
 let allBookings = [];
 
-let selectedCategory = null;
+let selectedCategory = 0;    // ← Всегда храним ID (0 = Все)
 let selectedStart = null;
 let selectedEnd = null;
 let currentCar = null;
 
 /* ===== Fetch ===== */
 async function fetchCategories() {
-  const r = await fetch(`${API}/categories/`);
+  const r = await fetch(`${API_BASE}/categories/`);
   const data = await r.json();
-  allCategories = (data?.results || []).map(c => ({ name: c.name || c.title, icon: c.icon }));
-  allCategories.unshift({ name: LANG === "en" ? "All" : "Все", icon: "../../images/sliders.svg" });
+  const rows = toList(data);
+
+  allCategories = rows.map(c => ({
+    id: c.id,
+    icon: c.icon,
+    _raw: c, // оставляем оригинал для подписи
+  }));
+
+  // Добавим "Все/All" с id=0
+  allCategories.unshift({ id: 0, icon: "../../images/sliders.svg", _raw: { title: "Все/All" } });
 }
+
 async function fetchCars() {
-  const r = await fetch(`${API}/cars/`);
+  const r = await fetch(`${API_CARS}/`);
   const data = await r.json();
-  
-  allCars = data?.results || [];
+  const rows = toList(data);
+
+  allCars = rows.map(c => ({
+    ...c,
+    category_id: (typeof c.category === "number")
+      ? c.category
+      : (c.category?.id ?? null)
+  }));
 }
+
 async function fetchBookings() {
-  const r = await fetch(`${API}/bookings/`);
+  const r = await fetch(`${API_CARS}/bookings/`);
   const data = await r.json();
-  allBookings = (data?.results || []).filter(b => ["active","pending","confirmed"].includes(b.status));
+  allBookings = toList(data).filter(b => ["active","pending","confirmed"].includes(b.status));
 }
 
 /* ===== City picker (optional element) ===== */
@@ -311,32 +287,41 @@ if (pickerCities) {
 })();
 
 /* ===== Categories ===== */
+function categoryLabel(catRaw){
+  const raw = catRaw.title ?? catRaw.name ?? "";
+  if (typeof raw === "string" && raw.includes("/")) {
+    // поддержка формата "RU/EN" в одной строке
+    return LANG === "en" ? raw.split("/")[1].trim() : raw.split("/")[0].trim();
+  }
+  return raw;
+}
+
 function renderCategories() {
   if (!categoriesContainer) return;
   if (!allCategories.length) {
     categoriesContainer.innerHTML = "<p>—</p>";
     return;
   }
-  categoriesContainer.innerHTML = allCategories.map(c => `
-    <div class="category" data-category="${c.name}">
-      <img src="${c.icon}" alt="${c.name}">
-      <p>${LANG === 'en' ? c.name.split('/')[1] : c.name.split('/')[0]}</p>
-    </div>`).join("");
+  categoriesContainer.innerHTML = allCategories.map(c => {
+    const label = categoryLabel(c._raw) || "";
+    return `
+      <div class="category" data-id="${c.id}">
+        <img src="${c.icon}" alt="${label}">
+        <p>${LANG === 'en' ? label.split('/')[1] : label.split('/')[0] }</p>
+        </div>`;
+  }).join("");
 
-  const catElems = document.querySelectorAll(".category");
-  catElems.forEach(el =>
-    el.addEventListener("click", () => {
-      catElems.forEach(c => c.classList.remove("active"));
-      el.classList.add("active");
-      selectedCategory = el.dataset.category;
-      applyFilters();
-    })
-  );
+  const items = document.querySelectorAll(".category");
+  items.forEach(el => el.addEventListener("click", () => {
+    items.forEach(x => x.classList.remove("active"));
+    el.classList.add("active");
+    selectedCategory = Number(el.dataset.id); // ← Храним ID
+    applyFilters();
+  }));
 
-  const labelAll = LANG==="en" ? "All" : "Все";
-  const allEl = Array.from(catElems).find(el => el.dataset.category === labelAll);
-  (allEl || catElems[0])?.classList.add("active");
-  selectedCategory = allEl ? labelAll : catElems[0]?.dataset.category;
+  const allEl = document.querySelector('.category[data-id="0"]');
+  (allEl || items[0])?.classList.add("active");
+  selectedCategory = 0;
 }
 
 /* ===== Filter modal ===== */
@@ -394,16 +379,18 @@ function applyFilters() {
 
   let list = allCars.slice();
 
-  const labelAll = LANG==="en" ? "All" : "Все";
-  if (selectedCategory && selectedCategory !== labelAll) {
-    list = list.filter(c => c.category_title === selectedCategory);
+  // Фильтр по категории по ID
+  if (typeof selectedCategory === "number" && selectedCategory !== 0) {
+    list = list.filter(c => Number(c.category_id) === Number(selectedCategory));
   }
 
+  // Город
   const selectedCity = localStorage.getItem("selectedCity");
   if (selectedCity && selectedCity !== "Все" && selectedCity !== "all") {
     list = list.filter(c => c.city?.name === selectedCity);
   }
 
+  // Остальные фильтры
   const yearFrom = parseInt(document.getElementById("filterYear")?.value || "");
   const color = document.getElementById("filterColor")?.value || "";
   const transmission = document.getElementById("filterTransmission")?.value || "";
@@ -423,7 +410,7 @@ function applyFilters() {
   if (!isNaN(priceFrom)) list = list.filter(c => Number(c.price_per_day) >= priceFrom);
   if (!isNaN(priceTo)) list = list.filter(c => Number(c.price_per_day) <= priceTo);
 
-  // бронь
+  // Доступность по брони
   const s = toLocalDate(selectedStart);
   const e = toLocalDate(selectedEnd);
   list = list.map(car => {
@@ -431,9 +418,9 @@ function applyFilters() {
     return { ...car, __hasConflict: conflicts };
   }).filter(car => !car.__hasConflict);
 
-  // сортировка
+  // Сортировка
   const sort = sortSelect?.value;
-  if (sort === "asc") list.sort((a,b)=> Number(a.price_per_day) - Number(b.price_per_day));
+  if (sort === "asc")  list.sort((a,b)=> Number(a.price_per_day) - Number(b.price_per_day));
   if (sort === "desc") list.sort((a,b)=> Number(b.price_per_day) - Number(a.price_per_day));
 
   if (!list.length) {
@@ -529,8 +516,8 @@ function initCarSliders() {
   });
 }
 
-/* ===== Promo logic (через бэкенд) ===== */
-let appliedPromo = null; // { code, fixed }
+/* ===== Promo logic ===== */
+let appliedPromo = null; // { code, discountAbs }
 function normalizeCode(s){ return String(s||"").trim().toUpperCase(); }
 
 /* ===== Booking ===== */
@@ -554,7 +541,7 @@ function openBooking(car) {
   const totalEl = bookingModal.querySelector(".total-amount");
   const deliverySelect = bookingModal.querySelector(".delivery");
 
-  // поля промо из разметки модалки
+  // промо поля
   const promoInput = document.getElementById("promoCode");
   const applyPromoBtn = document.getElementById("applyPromo");
   const promoMsg = document.getElementById("promoMessage");
@@ -571,10 +558,8 @@ function openBooking(car) {
     deliverySelect.innerHTML = `<option value="0">${t("delivery_none")}</option>`;
   }
 
-  // один раз получаем депозит
   const deposit = Number(currentCar.deposit || 0);
 
-  // === пересчёт итогов ===
   const updateTotal = () => {
     if (!selectedStart || !selectedEnd) {
       rangeEl.textContent = LANG==="en" ? "Dates not selected" : "Даты не выбраны";
@@ -593,7 +578,6 @@ function openBooking(car) {
     const rentTotal = pricePerDay * days;
     const deliveryFee = Number(deliverySelect.value || 0);
 
-    // скидка только на аренду
     const discount = Math.max(0, Math.min(rentTotal, Number(appliedPromo?.discountAbs || 0)));
     const rentAfter = Math.max(0, rentTotal - discount);
     const grandTotal = rentAfter + deliveryFee + deposit;
@@ -615,7 +599,6 @@ function openBooking(car) {
     modalTotal.textContent = rub(grandTotal);
   };
 
-  // === валидация промо на бэке ===
   const tryApplyPromo = async () => {
     const code = String(promoInput?.value || "").trim();
     if (!code) {
@@ -634,15 +617,14 @@ function openBooking(car) {
 
     promoMsg.textContent = LANG==="en" ? "Checking..." : "Проверяем...";
     promoMsg.style.color = "#6b7280";
-    
 
     try {
-      const res = await fetch("https://rentareabackend.pythonanywhere.com/api/promos/validate/", {
+      const res = await fetch(`${API_PROMOS}/validate/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code,
-          subtotal: rentTotal,        // 👈 вот это ключевой параметр
+          subtotal: rentTotal,
           product_type: "car",
           product_id: Number(currentCar.id),
           start_date: selectedStart,
@@ -668,13 +650,13 @@ function openBooking(car) {
       } else {
         appliedPromo = null;
         const reasonMap = {
-          not_found:                LANG==="en" ? "Promo not found" : "Промокод не найден",
+          not_found:                  LANG==="en" ? "Promo not found" : "Промокод не найден",
           inactive_or_out_of_window: LANG==="en" ? "Inactive or out of date" : "Не активен или вне дат",
-          min_days:                 LANG==="en" ? "Minimum rental days not reached" : "Не выполнен минимум суток",
-          min_subtotal:             LANG==="en" ? "Minimum subtotal not reached" : "Не достигнут минимальный чек",
-          product_type_not_allowed: LANG==="en" ? "Not allowed for this product type" : "Недоступно для этого типа",
-          target_not_allowed:       LANG==="en" ? "Not allowed for this item" : "Недоступно для этого объекта",
-          limits:                   LANG==="en" ? "Usage limit reached" : "Превышен лимит использования",
+          min_days:                   LANG==="en" ? "Minimum rental days not reached" : "Не выполнен минимум суток",
+          min_subtotal:               LANG==="en" ? "Minimum subtotal not reached" : "Не достигнут минимальный чек",
+          product_type_not_allowed:   LANG==="en" ? "Not allowed for this product type" : "Недоступно для этого типа",
+          target_not_allowed:         LANG==="en" ? "Not allowed for this item" : "Недоступно для этого объекта",
+          limits:                     LANG==="en" ? "Usage limit reached" : "Превышен лимит использования",
         };
         promoMsg.textContent = reasonMap[out.reason] || (LANG==="en" ? "Promo is not valid" : "Промокод недействителен");
         promoMsg.style.color = "red";
@@ -691,7 +673,6 @@ function openBooking(car) {
     }
   };
 
-  // вешаем обработчики ТОЛЬКО внутри openBooking
   applyPromoBtn?.addEventListener("click", tryApplyPromo);
   promoInput?.addEventListener("keydown", (e)=>{ if (e.key === "Enter") { e.preventDefault(); tryApplyPromo(); } });
 
@@ -699,7 +680,6 @@ function openBooking(car) {
   updateTotal();
   bookingForm?.reset?.();
 }
-
 
 /* ===== Submit booking ===== */
 bookingForm?.addEventListener("submit", async (e) => {
@@ -740,12 +720,11 @@ bookingForm?.addEventListener("submit", async (e) => {
   };
 
   const btn = bookingForm.querySelector(".btn");
-  const prev = btn.textContent;
   btn.disabled = true;
   btn.textContent = t("btn_sending");
 
   try {
-    const res = await fetch(`${API}/bookings/`, {
+    const res = await fetch(`${API_CARS}/bookings/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -757,11 +736,15 @@ bookingForm?.addEventListener("submit", async (e) => {
 
     try {
       if (appliedPromo?.code) {
-        await redeemPromo({
-          code: appliedPromo.code,
-          bookingId,
-          userId: user?.id,
-          discountAmount: typeof appliedPromo.fixed === "number" ? appliedPromo.fixed : undefined
+        await fetch(`${API_PROMOS}/redeem/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code: appliedPromo.code,
+            booking_id: bookingId,
+            user_id: user?.id,
+            discount_amount: undefined // используем расчёт сервера
+          })
         });
       }
     } catch (e) {
@@ -793,18 +776,17 @@ closeSuccess?.addEventListener("click", () => {
 });
 
 /* ===== Load brands/models for filter (on first open) ===== */
-const API_CARS = `${API_BASE}/cars`;
 let filterDataLoaded = false;
 
 async function loadFilterData() {
   try {
-    const brandsRes = await fetch(`${API_CARS}/brands`);
+    const brandsRes = await fetch(`${API_BASE}/brands`);
     const brandsJson = await brandsRes.json();
     const brands = Array.isArray(brandsJson) ? brandsJson : (brandsJson?.results || []);
     const brandSelect = document.getElementById("filterBrand");
     brandSelect.innerHTML = `<option value="">${t("any")}</option>` + brands.map(b => `<option value="${b.id}">${b.name}</option>`).join("");
 
-    const modelsRes = await fetch(`${API_CARS}/models`);
+    const modelsRes = await fetch(`${API_BASE}/models`);
     const modelsJson = await modelsRes.json();
     const allModels = Array.isArray(modelsJson) ? modelsJson : (modelsJson?.results || []);
     const modelSelect = document.getElementById("filterModel");
@@ -888,4 +870,13 @@ rulesOkBtn?.addEventListener("click", closeRulesModal);
 rulesModal?.addEventListener("click", (e)=>{ if (e.target === rulesModal) closeRulesModal(); });
 window.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && rulesModal?.style.display === "flex") closeRulesModal(); });
 
-
+/* ===== Language change (order matters) ===== */
+applyI18n();
+langSelect.addEventListener("change", () => {
+  LANG = langSelect.value;
+  localStorage.setItem("rent_lang", LANG);
+  applyI18n();
+  renderCategories();     // сначала перерисовали категории (подписи)
+  selectedCategory = 0;   // сбросили выбор на "Все"
+  applyFilters();         // потом пересчитали выдачу
+});

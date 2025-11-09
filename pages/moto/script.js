@@ -19,31 +19,23 @@ const I18N = {
     sort_desc:"По убыванию цены",
     setup_filter:"Настроить фильтр",
     rent_date:"Дата аренды",
-    from:"От:",
-    to:"До:",
-    find:"Найти",
+    from:"От:", to:"До:", find:"Найти",
     choose_type_moto:"Выберите тип мотоцикла",
     order_details:"Детали заказа",
     moto_title:"Мотоцикл",
     rent_date_colon:"Дата аренды:",
     total:"Итого:",
-    name:"Имя",
-    phone:"Номер телефона",
-    comments:"Комментарии",
-    delivery:"Доставка",
-    pickup:"Самовывоз",
+    name:"Имя", phone:"Номер телефона", comments:"Комментарии",
+    delivery:"Доставка", pickup:"Самовывоз",
     delivery_addr:"Доставка (укажите адрес в комментарии)",
-    agree_with:"Я согласен с",
-    rental_rules_btn:"правилами аренды",
+    agree_with:"Я согласен с", rental_rules_btn:"правилами аренды",
     book:"Забронировать",
     success_title:"Ваша заявка принята!",
     success_text:"В течении 15 минут с вами свяжутся наши менеджеры)",
     ok:"Ок",
     filtering:"Фильтрация",
-    brand:"Марка",
-    model:"Модель",
-    year_from:"Год выпуска (от)",
-    color:"Цвет",
+    brand:"Марка", model:"Модель",
+    year_from:"Год выпуска (от)", color:"Цвет",
     transmission:"Коробка передач",
     any:"Любая",
     white:"Белый", black:"Черный", red:"Красный", silver:"Серебристый", blue:"Синий",
@@ -52,12 +44,14 @@ const I18N = {
     ph_year_from:"Год от", ph_price_from:"От", ph_price_to:"До",
     msg_pick_dates:"Пожалуйста, выберите даты аренды",
     msg_choose_both:"Выберите обе даты",
-    msg_no_motos:"Нет доступных мотоциклов",
+    msg_no_motos:"Нет доступных мотоциклов на выбранные даты",
     loading:"Загрузка...", sending:"Отправка...",
     per_day:"/день", deposit:"Депозит",
-    day1:"день", day2:"дня", day5:"дней"
+    day1:"день", day2:"дня", day5:"дней",
+    get_in_touch_with_manager: 'Связаться с менеджером'
   },
   en: {
+    get_in_touch_with_manager: "Get in touch with a manager",
     title:"Motorcycles",
     heading:"Motorcycles",
     sort_by_price:"Sort:",
@@ -66,31 +60,23 @@ const I18N = {
     sort_desc:"Price ↓",
     setup_filter:"Filter",
     rent_date:"Rental dates",
-    from:"From:",
-    to:"To:",
-    find:"Search",
+    from:"From:", to:"To:", find:"Search",
     choose_type_moto:"Choose motorcycle type",
     order_details:"Order details",
     moto_title:"Motorcycle",
     rent_date_colon:"Rental dates:",
     total:"Total:",
-    name:"Name",
-    phone:"Phone number",
-    comments:"Comments",
-    delivery:"Delivery",
-    pickup:"Pickup",
+    name:"Name", phone:"Phone number", comments:"Comments",
+    delivery:"Delivery", pickup:"Pickup",
     delivery_addr:"Delivery (specify address in comments)",
-    agree_with:"I agree with",
-    rental_rules_btn:"rental rules",
+    agree_with:"I agree with", rental_rules_btn:"rental rules",
     book:"Book",
     success_title:"Request submitted!",
     success_text:"Our manager will contact you within 15 minutes.",
     ok:"OK",
     filtering:"Filtering",
-    brand:"Brand",
-    model:"Model",
-    year_from:"Year (from)",
-    color:"Color",
+    brand:"Brand", model:"Model",
+    year_from:"Year (from)", color:"Color",
     transmission:"Transmission",
     any:"Any",
     white:"White", black:"Black", red:"Red", silver:"Silver", blue:"Blue",
@@ -99,7 +85,7 @@ const I18N = {
     ph_year_from:"Year from", ph_price_from:"From", ph_price_to:"To",
     msg_pick_dates:"Please select rental dates",
     msg_choose_both:"Choose both dates",
-    msg_no_motos:"No motorcycles available",
+    msg_no_motos:"No motorcycles available for the selected dates",
     loading:"Loading...", sending:"Sending...",
     per_day:"/day", deposit:"Deposit",
     day1:"day", day2:"days", day5:"days"
@@ -109,7 +95,7 @@ const I18N = {
 const langSelect = document.getElementById("langSelect");
 let LANG = localStorage.getItem("rent_lang")
   || (navigator.language?.startsWith("en") ? "en" : "ru");
-langSelect.value = LANG;
+if (langSelect) langSelect.value = LANG;
 
 function t(key){ return I18N[LANG][key] ?? key; }
 function applyI18n() {
@@ -117,14 +103,6 @@ function applyI18n() {
   document.querySelectorAll("[data-i18n]").forEach(el => el.innerHTML = t(el.dataset.i18n));
   document.querySelectorAll("[data-i18n-ph]").forEach(el => el.placeholder = t(el.dataset.i18nPh));
 }
-langSelect.addEventListener("change", ()=>{
-  LANG = langSelect.value;
-  localStorage.setItem("rent_lang", LANG);
-  applyI18n();
-  renderCategories();
-  applyFilters();
-});
-applyI18n();
 
 /* ==== DOM ==== */
 const categoriesContainer = document.querySelector(".categories");
@@ -170,12 +148,19 @@ const filterTransInput = document.getElementById("filterTransmission");
 const priceFromInput   = document.getElementById("priceFrom");
 const priceToInput     = document.getElementById("priceTo");
 
+/* ==== API ==== */
+const API_BASE   = "https://rentareabackend.pythonanywhere.com/api/motorcycles";
+const API_MOTO   = `${API_BASE}/motorcycles`;
+const API_PROMOS = `${API_BASE}/promos`;
+
 /* ==== Helpers ==== */
 const dayMs = 24*60*60*1000;
+const toList = (data) => (Array.isArray(data) ? data : (data?.results || []));
 const toLocalDate = (iso) => new Date(iso + "T00:00:00");
 const fmt = (d) => d.toLocaleDateString(LANG==="en"?"en-GB":"ru-RU",{day:"2-digit",month:"short"});
 const money = (n) => `${Number(n||0).toLocaleString(LANG==="en"?"en-GB":"ru-RU")} ฿`;
 const overlaps = (aStart, aEnd, bStart, bEnd) => (aStart < bEnd) && (aEnd > bStart);
+const pad = (x) => String(x).padStart(2,"0");
 
 function rentalDays(startISO, endISO) {
   const s = toLocalDate(startISO), e = toLocalDate(endISO);
@@ -188,7 +173,6 @@ function declineDays(n){
   if ([2,3,4].includes(n%10) && ![12,13,14].includes(n%100)) return t("day2");
   return t("day5");
 }
-const pad = (x) => String(x).padStart(2,"0");
 
 /* === Запрет прошедших дат и согласование диапазона === */
 (function lockPastDates() {
@@ -209,15 +193,12 @@ const pad = (x) => String(x).padStart(2,"0");
   });
 })();
 
-/* ==== API ==== */
-const API = "https://rentareabackend.pythonanywhere.com/api/motorcycles";
-
 /* ==== State ==== */
 let allMotorcycles = [];
 let allCategories  = [];
 let allBookings    = [];
 
-let selectedCategory = null;
+let selectedCategory = 0;  // ← Храним ID категории (0 = Все/All)
 let selectedStart = null;
 let selectedEnd   = null;
 let currentMoto   = null;
@@ -239,25 +220,42 @@ const BLOCK = new Set(["active","pending","confirmed"]);
 
 /* ==== Fetchers ==== */
 async function fetchCategories() {
-  const r = await fetch(`${API}/categories/`);
+  const r = await fetch(`${API_BASE}/categories/`);
   const data = await r.json();
-  allCategories = data?.results || [];
-  const allLabel = LANG==="en"?"All":"Все";
-  const hasAll = allCategories.some(c => (c.title||"").trim().toLowerCase() === allLabel.toLowerCase());
-  if (!hasAll) allCategories.unshift({ title: allLabel, icon: "../../images/sliders.svg" });
+  const rows = toList(data);
+
+  allCategories = rows.map(c => ({
+    id: c.id,
+    icon: c.icon || "../../images/sliders.svg",
+    _raw: c
+  }));
+
+  // добавим "Все/All" с id=0
+  allCategories.unshift({ id: 0, icon: "../../images/sliders.svg", _raw: { title: "Все/All" } });
 }
+
 async function fetchMotorcycles() {
-  const r = await fetch(`${API}/motorcycles/`);
+  const r = await fetch(`${API_MOTO}/`);
   const data = await r.json();
-  const city = localStorage.getItem('selectedCity');
-  const list = data?.results || [];
-  allMotorcycles = (!city || city === 'Все' || city === 'All') ? list : list.filter(i => i.city?.name === city);
+  const rows = toList(data);
+
+  allMotorcycles = rows.map(m => ({
+    ...m,
+    category_id: (typeof m.category === "number")
+      ? m.category
+      : (m.category?.id ?? m.category_id ?? null),
+    brand_id: (typeof m.brand === "number") ? m.brand : (m.brand?.id ?? null),
+    brand_name: m.brand?.name ?? m.brand ?? "",
+    model_id: (typeof m.model === "number") ? m.model : (m.model?.id ?? null),
+    model_name: m.model?.name ?? m.model ?? "",
+  }));
 }
+
 async function fetchBookings() {
   try {
-    const r = await fetch(`${API}/bookings/`);
+    const r = await fetch(`${API_MOTO}/bookings/`);
     const data = await r.json();
-    allBookings = (data?.results || []).filter(b => BLOCK.has(String(b.status).toLowerCase()));
+    allBookings = toList(data).filter(b => BLOCK.has(String(b.status).toLowerCase()));
   } catch (e) {
     console.warn("booking load error:", e);
     allBookings = [];
@@ -270,61 +268,65 @@ async function fetchBookings() {
   renderCategories();
   hydrateFiltersFromDataset(allMotorcycles);
   cardsContainer.innerHTML = `<p style="text-align:center;color:#99A2AD;margin-top:40px;">${t("msg_pick_dates")}</p>`;
+  applyI18n();
 })();
 
 /* ==== Categories ==== */
+function categoryLabel(catRaw){
+  const raw = catRaw.title ?? catRaw.name ?? "";
+  if (typeof raw === "string" && raw.includes("/")) {
+    return LANG === "en" ? raw.split("/")[1].trim() : raw.split("/")[0].trim();
+  }
+  return raw;
+}
+
 function renderCategories() {
+  if (!categoriesContainer) return;
   if (!allCategories.length) {
     categoriesContainer.innerHTML = "<p>—</p>"; return;
   }
-  categoriesContainer.innerHTML = allCategories.map(
-    (c) => `
-      <div class="category" data-category="${c.title}">
-        <img src="${c.icon}" alt="${c.title}">
-        <p>${LANG === 'en' ? c.title.split('/')[1] : c.title.split('/')[0]}</p>
-      </div>`
-  ).join("");
+  categoriesContainer.innerHTML = allCategories.map(c => {
+    const label = categoryLabel(c._raw) || "";
+    return `
+      <div class="category" data-id="${c.id}">
+        <img src="${c.icon}" alt="${label}">
+        <p>${LANG === 'en' ? label.split('/')[1] : label.split('/')[0] }</p>
+      </div>`;
+  }).join("");
 
   const catElems = document.querySelectorAll(".category");
   catElems.forEach((el) => {
     el.addEventListener("click", () => {
       catElems.forEach((c) => c.classList.remove("active"));
       el.classList.add("active");
-      selectedCategory = el.getAttribute("data-category");
+      selectedCategory = Number(el.dataset.id);  // ← ID
       applyFilters();
     });
   });
 
-  const allLabel = LANG==="en"?"All":"Все";
-  const allEl = Array.from(catElems).find(el => el.dataset.category === allLabel);
+  const allEl = document.querySelector('.category[data-id="0"]');
   (allEl || catElems[0])?.classList.add("active");
-  selectedCategory = allEl ? allLabel : catElems[0]?.dataset.category || null;
+  selectedCategory = 0;
 }
 
-/* Build brand/model lists from dataset (fallback if API lists not used) */
+/* ==== Build brand/model lists from dataset (fallback если нет отдельных API) ==== */
 function hydrateFiltersFromDataset(list){
   if (!filterBrandInput || !filterModelInput) return;
-  const brands = [...new Set(list.map(i => i.brand?.name || i.brand || "").filter(Boolean))].sort();
+  const brands = [...new Set(list.map(i => i.brand_name).filter(Boolean))].sort();
   filterBrandInput.innerHTML = `<option value="">${t("any")}</option>` + brands.map(b=>`<option value="${b}">${b}</option>`).join("");
 
-  const models = [...new Set(list.map(i => i.model?.name || i.model || "").filter(Boolean))].sort();
+  const models = [...new Set(list.map(i => i.model_name).filter(Boolean))].sort();
   filterModelInput.innerHTML = `<option value="">${t("any")}</option>` + models.map(m=>`<option value="${m}">${m}</option>`).join("");
 
   filterBrandInput.onchange = () => {
     fBrand = filterBrandInput.value;
-    const scoped = fBrand ? list.filter(i => (i.brand?.name || i.brand) === fBrand) : list;
-    const subModels = [...new Set(scoped.map(i => i.model?.name || i.model || "").filter(Boolean))].sort();
+    const scoped = fBrand ? list.filter(i => i.brand_name === fBrand) : list;
+    const subModels = [...new Set(scoped.map(i => i.model_name).filter(Boolean))].sort();
     filterModelInput.innerHTML = `<option value="">${t("any")}</option>` + subModels.map(m=>`<option value="${m}">${m}</option>`).join("");
   };
 }
 
-/* Filter modal open */
-filterBtn?.addEventListener("click", () => {
-  filterModal.style.display = "flex";
-  document.body.style.overflow = "hidden";
-});
-
-/* Date search */
+/* ==== Date search ==== */
 showBtn?.addEventListener("click", async () => {
   selectedStart = startInput?.value || null;
   selectedEnd   = endInput?.value || null;
@@ -344,7 +346,7 @@ showBtn?.addEventListener("click", async () => {
   showBtn.textContent = old;
 });
 
-/* Sorting select */
+/* ==== Sorting ==== */
 sortSelect?.addEventListener("change", () => {
   sortMode = sortSelect.value || "none";
   applyFilters();
@@ -358,17 +360,15 @@ function applyFilters() {
   }
 
   let list = allMotorcycles.slice();
-  const allLabel = LANG==="en"?"All":"Все";
-  if (selectedCategory && selectedCategory !== allLabel) {
-    list = list.filter(m => (m.category_title || "") === selectedCategory);
+
+  // По категории по ID (0 = все)
+  if (typeof selectedCategory === "number" && selectedCategory !== 0) {
+    list = list.filter(m => Number(m.category_id) === Number(selectedCategory));
   }
 
   // brand/model/year/color/transmission/price
-  const getBrandId = (m) => String(m.brand?.id ?? m.brand ?? "");
-  const getModelId = (m) => String(m.model?.id ?? m.model ?? "");
-
-  if (fBrand) list = list.filter(m => getBrandId(m) === String(fBrand) || (m.brand?.name === fBrand));
-  if (fModel) list = list.filter(m => getModelId(m) === String(fModel) || (m.model?.name === fModel));
+  if (fBrand) list = list.filter(m => m.brand_name === fBrand);
+  if (fModel) list = list.filter(m => m.model_name === fModel);
   if (fYear)  list = list.filter(m => Number(m.year || 0) >= Number(fYear));
   if (fColor) list = list.filter(m => (m.color || "").toLowerCase() === fColor.toLowerCase());
   if (fTrans) list = list.filter(m => (m.transmission || "").toUpperCase() === fTrans.toUpperCase());
@@ -380,7 +380,7 @@ function applyFilters() {
   const e = toLocalDate(selectedEnd);
   list = list
     .map((m) => {
-      const conflicts = (allBookings||[]).filter((b) => b.motorcycle === m.id);
+      const conflicts = (allBookings||[]).filter((b) => (b.motorcycle === m.id) || (b.motorcycle_id === m.id));
       const hasConflict = conflicts.some((b) => overlaps(s, e, toLocalDate(b.start_date), toLocalDate(b.end_date)));
       return { ...m, __hasConflict: hasConflict };
     })
@@ -390,6 +390,10 @@ function applyFilters() {
   if (sortMode === "asc")  list.sort((a,b)=> Number(a.price_per_day)-Number(b.price_per_day));
   if (sortMode === "desc") list.sort((a,b)=> Number(b.price_per_day)-Number(a.price_per_day));
 
+  if (!list.length) {
+    cardsContainer.innerHTML = `<p style='text-align:center;color:#99A2AD;margin-top:40px;'>${t("msg_no_motos")}</p>`;
+    return;
+  }
   renderMotorcycles(list);
 }
 
@@ -426,29 +430,18 @@ function initSliders() {
 
 /* ==== Render ==== */
 function renderMotorcycles(motos) {
-  if (!motos.length) {
-    cardsContainer.innerHTML = `<p style='text-align:center;color:#99A2AD;margin-top:40px;'>${t("msg_no_motos")}</p>`;
-    return;
-  }
-
   cardsContainer.innerHTML = motos.map((m) => {
     const images = (m.images?.length ? m.images : [{ image: "../../images/no_photo.png" }])
       .map(img => `<img loading="lazy" decoding="async" src="${img.image}" alt="${m.title}">`)
       .join("");
 
     // price block
-    const block = (() => {
-      let days = 1, perDay = Number(m.price_per_day) || 0, total = perDay;
-      if (selectedStart && selectedEnd) {
-        days = rentalDays(selectedStart, selectedEnd);
-        perDay = getDynamicPrice(m, days);
-        total = perDay * days;
-      }
-      const labelDays = `${days} ${declineDays(days)}`;
-      const perDayLabel = `${money(perDay)} ${t("per_day")}`;
-      const deposit = `${t("deposit")}: ${money(m.deposit || 0)}`;
-      return `<h4>${money(total)}</h4><p>${perDayLabel} · ${labelDays}<br>${deposit}</p>`;
-    })();
+    const days = rentalDays(selectedStart, selectedEnd);
+    const perDay = getDynamicPrice(m, days);
+    const total = perDay * days;
+    const labelDays = `${days} ${declineDays(days)}`;
+    const perDayLabel = `${money(perDay)} ${t("per_day")}`;
+    const deposit = `${t("deposit")}: ${money(m.deposit || 0)}`;
 
     return `
       <div class="card" data-card="${m.id}">
@@ -470,10 +463,13 @@ function renderMotorcycles(motos) {
             <li><img src="../../images/car_parameters/oil.svg" alt="oil"> ${m.oil_type || "—"}</li>
           </div>
 
-          ${(m.features?.length ? `<div class="goods">${m.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : "")}
+          ${m.features?.length ? `<div class="goods">${m.features.map(f=>`<li>${f.title}</li>`).join("")}</div>` : ""}
           <div class="line"></div>
 
-          <div class="price">${block}</div>
+          <div class="price">
+            <h4>${money(total)}</h4>
+            <p>${perDayLabel} · ${labelDays}<br>${deposit}</p>
+          </div>
           <button class="openBooking" data-id="${m.id}">${t("book")}</button>
         </div>
       </div>`;
@@ -509,41 +505,42 @@ function getDynamicPrice(moto, days) {
 
 /* ==== Promo helpers ==== */
 function computeCurrentTotal(moto){
-  if (!moto) return 0;
-  if (selectedStart && selectedEnd){
-    const n = rentalDays(selectedStart, selectedEnd);
-    return getDynamicPrice(moto, n) * n;
-  }
-  return Number(moto.price_per_day) || 0;
+  if (!moto || !selectedStart || !selectedEnd) return 0;
+  const n = rentalDays(selectedStart, selectedEnd);
+  return getDynamicPrice(moto, n) * n;
 }
 function updateTotalWithPromo(rentTotal) {
   const discount = Math.max(0, Math.min(rentTotal, Number(appliedPromo?.discountAbs || 0)));
   const final = rentTotal - discount;
-  modalTotal.textContent = money(final);
+  if (modalTotal) modalTotal.textContent = money(final);
+  if (!promoMsg) return;
   if (discount > 0) {
-    promoMsg.textContent = `✅ Промокод применён. Скидка −${money(discount)}`;
+    promoMsg.textContent = `✅ ${LANG==="en"?"Promo applied":"Промокод применён"} −${money(discount)}`;
     promoMsg.style.color = "green";
   } else {
-    promoMsg.textContent = "Скидка не применяется";
+    promoMsg.textContent = LANG==="en" ? "No discount applied" : "Скидка не применяется";
     promoMsg.style.color = "#6b7280";
   }
 }
 async function tryApplyPromo() {
   const code = String(promoInput?.value || "").trim();
-  if (!code) { promoMsg.textContent = "Введите промокод"; promoMsg.style.color = "red"; return; }
-  if (!currentMoto?.id) { promoMsg.textContent = "Сначала выберите мотоцикл"; promoMsg.style.color = "red"; return; }
+  if (!code) { if(promoMsg){ promoMsg.textContent = LANG==="en"?"Enter a promo code":"Введите промокод"; promoMsg.style.color = "red"; } return; }
+  if (!currentMoto?.id || !selectedStart || !selectedEnd) {
+    if(promoMsg){ promoMsg.textContent = LANG==="en"?"Choose dates and a motorcycle first":"Сначала выберите даты и мотоцикл"; promoMsg.style.color = "red"; }
+    return;
+  }
 
   const rentTotal = computeCurrentTotal(currentMoto);
-  promoMsg.textContent = "Проверяем..."; promoMsg.style.color = "#6b7280";
+  if (promoMsg){ promoMsg.textContent = LANG==="en"?"Checking...":"Проверяем..."; promoMsg.style.color = "#6b7280"; }
 
   try {
-    const res = await fetch("https://rentareabackend.pythonanywhere.com/api/promos/validate/", {
+    const res = await fetch(`${API_PROMOS}/validate/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         code,
         subtotal: rentTotal,
-        product_type: "motorcycle",          // ВАЖНО: как в твоих моделях
+        product_type: "motorcycle",          // Важно: под твой бэкенд
         product_id: Number(currentMoto.id),
         start_date: selectedStart,
         end_date: selectedEnd,
@@ -551,7 +548,7 @@ async function tryApplyPromo() {
       }),
     });
     const out = await res.json();
-    if (!res.ok) throw new Error(out?.detail || "Ошибка проверки");
+    if (!res.ok) throw new Error(out?.detail || "Validation error");
 
     if (out.valid && Number(out.discount) > 0) {
       appliedPromo = { code, discountAbs: Number(out.discount) };
@@ -559,15 +556,13 @@ async function tryApplyPromo() {
       tg?.HapticFeedback?.notificationOccurred?.("success");
     } else {
       appliedPromo = null;
-      promoMsg.textContent = "❌ Промокод недействителен";
-      promoMsg.style.color = "red";
+      if (promoMsg){ promoMsg.textContent = LANG==="en"?"Promo is not valid":"Промокод недействителен"; promoMsg.style.color = "red"; }
       tg?.HapticFeedback?.notificationOccurred?.("error");
       updateTotalWithPromo(rentTotal);
     }
   } catch (err) {
     console.error(err);
-    promoMsg.textContent = "Ошибка при проверке промокода";
-    promoMsg.style.color = "red";
+    if (promoMsg){ promoMsg.textContent = LANG==="en"?"Error checking promo":"Ошибка проверки промокода"; promoMsg.style.color = "red"; }
     tg?.HapticFeedback?.notificationOccurred?.("error");
   }
 }
@@ -580,7 +575,7 @@ function openBookingForMoto(moto) {
   // сброс промо при каждом открытии
   appliedPromo = null;
   if (promoInput) promoInput.value = "";
-  if (promoMsg) { promoMsg.textContent = "Скидка применяется только к аренде"; promoMsg.style.color="#6b7280"; }
+  if (promoMsg) { promoMsg.textContent = LANG==="en"?"Discount applies to rent only":"Скидка применяется только к аренде"; promoMsg.style.color="#6b7280"; }
 
   if (modalPhoto)  modalPhoto.src = moto.images?.[0]?.image || "../../images/no_photo.png";
   if (modalTitle)  modalTitle.textContent = moto.title || t("moto_title");
@@ -592,9 +587,9 @@ function openBookingForMoto(moto) {
 
   if (selectedStart && selectedEnd) {
     const n = rentalDays(selectedStart, selectedEnd);
-    modalRange.textContent = `${fmt(toLocalDate(selectedStart))} — ${fmt(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
+    if (modalRange) modalRange.textContent = `${fmt(toLocalDate(selectedStart))} — ${fmt(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
   } else {
-    modalRange.textContent = "—";
+    if (modalRange) modalRange.textContent = "—";
   }
 
   const total = computeCurrentTotal(moto);
@@ -639,8 +634,8 @@ bookingForm?.addEventListener("submit", async (e) => {
     provider_terms_accepted: true,
     service_terms_accepted: true,
     comment: `[delivery:${deliveryType}] ${comment || ""}`.trim(),
+    promo_code: appliedPromo?.code || null
   };
-  if (appliedPromo?.code) payload.promo_code = appliedPromo.code;
 
   const btn = bookingForm.querySelector(".btn");
   const prevText = btn.textContent;
@@ -648,7 +643,7 @@ bookingForm?.addEventListener("submit", async (e) => {
   btn.textContent = t("sending");
 
   try {
-    const res = await fetch(`${API}/bookings/`, {
+    const res = await fetch(`${API_MOTO}/bookings/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -673,6 +668,10 @@ bookingForm?.addEventListener("submit", async (e) => {
 });
 
 /* ==== Filter modal behaviour ==== */
+filterBtn?.addEventListener("click", () => {
+  filterModal.style.display = "flex";
+  document.body.style.overflow = "hidden";
+});
 filterClose?.addEventListener("click", () => {
   filterModal.style.display = "none";
   document.body.style.overflow = "";
@@ -704,7 +703,7 @@ function ensureRulesModal() {
     <div class="modal" id="rulesModal" style="display:none;">
       <div class="modal-content" style="max-width:640px;margin:0 auto;">
         <span class="close rules-close">&times;</span>
-        <h3 style="margin:0 0 12px;">${t("rental_rules_btn")[0].toUpperCase()+t("rental_rules_btn").slice(1)}</h3>
+        <h3 style="margin:0 0 12px;">${(LANG==="en"?"Rental rules":"Правила аренды")}</h3>
         <div class="rules-body" style="display:flex;flex-direction:column;gap:10px;"></div>
         <button type="button" class="btn rules-ok" style="margin-top:16px;">${t("ok")}</button>
       </div>
@@ -767,12 +766,22 @@ document.addEventListener("click", (e) => {
     if (bookingModal?.style?.display === "flex" && currentMoto) {
       const n = (selectedStart && selectedEnd) ? rentalDays(selectedStart, selectedEnd) : 0;
       if (n > 0) {
-        modalRange.textContent = `${fmt(toLocalDate(selectedStart))} — ${fmt(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
+        if (modalRange) modalRange.textContent = `${fmt(toLocalDate(selectedStart))} — ${fmt(toLocalDate(selectedEnd))} · ${n} ${declineDays(n)}`;
       } else {
-        modalRange.textContent = "—";
+        if (modalRange) modalRange.textContent = "—";
       }
       const total = computeCurrentTotal(currentMoto);
       updateTotalWithPromo(total);
     }
   });
+});
+
+/* ==== Language change (order matters) ==== */
+langSelect?.addEventListener("change", ()=>{
+  LANG = langSelect.value;
+  localStorage.setItem("rent_lang", LANG);
+  applyI18n();
+  renderCategories();     // перерисовали подписи
+  selectedCategory = 0;   // сброс на "Все"
+  applyFilters();         // пересчёт выдачи
 });

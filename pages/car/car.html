@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="./style.css" />
     <style>
       .filter { display:flex; align-items:center; gap:8px; color:#99A2AD; padding:0 15px; cursor:pointer; user-select:none; }
-      .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter: blur(2px); z-index:1000; justify-content:center; align-items:flex-end; }
+      .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter: blur(2px); z-index:10000; justify-content:center; align-items:flex-end;  }
       .modal-content { width:100%; max-height:90%; overflow:auto; background:#fff; border-radius:20px 20px 0 0; padding:20px; animation:slideUp .25s ease-out; }
       .modal .close { font-size:24px; cursor:pointer; float:right; }
       @keyframes slideUp { from { transform: translateY(100%);} to { transform: translateY(0);} }
@@ -256,6 +256,12 @@
                 <button type="button" class="rules-link" data-i18n="rental_rules_btn">правилами аренды</button>
               </span>
             </label>
+            <button
+              data-i18n="get_in_touch_with_manager"
+              class="btn"
+              onclick="window.open('https://t.me/rentareas', '_blank')">
+              Связаться с менеджером
+            </button>            
             <button type="submit" class="btn" data-i18n="book">Забронировать</button>
           </form>
         </div>

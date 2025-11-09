@@ -28,8 +28,11 @@ const I18N = {
     promo_title:"Введите промокод для скидки",
     apply_promo:"Применить",
     promo_hint:"Скидка применяется к цене экскурсии",
+    get_in_touch_with_manager: 'Связаться с менеджером'
+    
   },
   en: {
+    get_in_touch_with_manager: "Get in touch with a manager",
     title:"Tours", heading:"Tours",
     setup_filter:"Filter", rent_date_tour:"Tour date",
     from:"From:", find:"Search", choose_type_tour:"Choose tour type",

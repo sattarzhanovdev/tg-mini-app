@@ -58,9 +58,11 @@ const I18N = {
     months_short:"мес",
     per_day:"/день",
     deposit:"Депозит",
-    district_label:"Район"
+    district_label:"Район",
+    get_in_touch_with_manager: 'Связаться с менеджером'
   },
   en: {
+    get_in_touch_with_manager: "Get in touch with a manager",
     title:"Realty — Telegram Mini App",
     heading:"Realty",
     mode_daily:"Daily",
