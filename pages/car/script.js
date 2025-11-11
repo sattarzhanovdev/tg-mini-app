@@ -295,7 +295,7 @@ async function fetchCars() {
 }
 
 async function fetchBookings() {
-  const r = await fetch(`${API_CARS}/bookings/`);
+  const r = await fetch(`${API_BASE}/bookings/`);
   const data = await r.json();
   allBookings = toList(data).filter(b => ["active","pending","confirmed"].includes(b.status));
 }
