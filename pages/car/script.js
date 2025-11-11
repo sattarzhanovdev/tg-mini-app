@@ -103,9 +103,13 @@ const I18N = {
     discount_label:"Скидка",
     promo_applied:"Промокод применён",
     promo_invalid:"Некорректный промокод",
-    get_in_touch_with_manager: 'Связаться с менеджером'
+    get_in_touch_with_manager: 'Связаться с менеджером',
+    rent_amount_label: 'Сумма аренды',
+    delivery_amount_label: 'Сумма доставки'
   },
   en: {
+    rent_amount_label: 'Rent amount',
+    delivery_amount_label: 'Delivery amount',
     get_in_touch_with_manager: "Get in touch with a manager",
     title:"Cars — Telegram Mini App",
     cars_title:"Cars",
@@ -612,10 +616,20 @@ function openBooking(car) {
     const pricePerDay = getDynamicPrice(currentCar, days);
     const rentTotal = pricePerDay * days;
     const deliveryFee = Number(deliverySelect.value || 0);
-
     const discount = Math.max(0, Math.min(rentTotal, Number(appliedPromo?.discountAbs || 0)));
     const rentAfter = Math.max(0, rentTotal - discount);
     const grandTotal = rentAfter + deliveryFee + deposit;
+
+    // сохраним для submit
+    CURRENT_TOTALS = {
+      days,
+      perDay: pricePerDay,
+      rentTotal,
+      delivery: deliveryFee,
+      discount,
+      deposit,
+      grandTotal
+    };
 
     rangeEl.textContent = `${fmtRu(toLocalDate(selectedStart))} — ${fmtRu(toLocalDate(selectedEnd))} · ${days} ${declineDays(days)}`;
     rentEl.textContent  = `${rub(rentTotal)} (${rub(pricePerDay)}${t("per_day")} × ${days})`;
@@ -751,15 +765,17 @@ bookingForm?.addEventListener("submit", async (e) => {
     delivery_zone_name: deliveryName,
     delivery_price: deliveryPrice,
     promo_code: appliedPromo?.code || null,
-    discount_amount: typeof appliedPromo?.fixed === "number" ? appliedPromo.fixed : 0
+    discount_amount: typeof appliedPromo?.fixed === "number" ? appliedPromo.fixed : 0,
+    total_price: Number(totalPrice.toFixed(2))
   };
 
+  
   const btn = bookingForm.querySelector(".btn");
   btn.disabled = true;
   btn.textContent = t("btn_sending");
 
   try {
-    const res = await fetch(`${API_CARS}/bookings/`, {
+    const res = await fetch(`${API_BOOKS}/`, {  // <-- было ${API_CARS}/bookings/
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
